@@ -203,15 +203,29 @@ inline int streamStateFromFormat(std::ostream& out, const char* fmtStart,
     bool precisionSet = false;
     const char* c = fmtStart;
     // 1) Parse flags
+    bool leftJustify = false;
     for(;; ++c)
     {
         switch(*c)
         {
-            case '#': out.setf(std::ios::showpoint | std::ios::showbase); continue;
-            case '0': out.fill('0');                                      continue;
-            case '-': out.setf(std::ios::left, std::ios::adjustfield);    continue;
-            case ' ': out.fill(' ');                                      continue;
-            case '+': out.setf(std::ios::showpos);                        continue;
+            case '#':
+                out.setf(std::ios::showpoint | std::ios::showbase);
+                continue;
+            case '0':
+                if(!leftJustify)
+                    out.fill('0');
+                continue;
+            case '-':
+                leftJustify = true;
+                out.fill(' ');
+                out.setf(std::ios::left, std::ios::adjustfield);
+                continue;
+            case ' ':
+                out.fill(' ');
+                continue;
+            case '+':
+                out.setf(std::ios::showpos);
+                continue;
         }
         break;
     }
@@ -226,11 +240,13 @@ inline int streamStateFromFormat(std::ostream& out, const char* fmtStart,
         ++c;
         if(*c == '*')
             TINYFORMAT_ERROR("tinyformat: variable field widths not supported");
+        int precision = 0;
         if(*c >= '0' && *c <= '9')
-        {
-            out.precision(parseIntAndAdvance(c));
-            precisionSet = true;
-        }
+            precision = parseIntAndAdvance(c);
+        else if(*c == '-') // negative precisions ignored, treated as zero.
+            parseIntAndAdvance(++c);
+        out.precision(precision);
+        precisionSet = true;
     }
     // 4) Ignore any C99 length modifier
     while(*c == 'l' || *c == 'h' || *c == 'L' ||
@@ -240,8 +256,8 @@ inline int streamStateFromFormat(std::ostream& out, const char* fmtStart,
     char type = 's';
     if(c < fmtEnd)
         type = *c;
-    // Set stream flags based on conversion specifier.  boost::format was very
-    // helpful in compiling the list of correspondences here.
+    // Set stream flags based on conversion specifier (thanks to the
+    // boost::format class for forging the way here).
     switch(type)
     {
         case 'u': case 'd': case 'i':
@@ -318,6 +334,8 @@ inline const char* printFormatStringLiteral(std::ostream& out, const char* fmt)
 }
 
 
+// Skip to end of format spec & return it.  fmt is expected to point to the
+// character after the '%' in the spec.
 inline const char* findFormatSpecEnd(const char* fmt)
 {
     // Advance to end of format specifier.
@@ -415,7 +433,7 @@ inline void formatValueBasic(std::ostream& out, const char* fmtBegin,
 }
 
 
-// Format function,  0-argument case.
+// Format function, 0-argument case.
 inline void format(std::ostream& out, const char* fmt)
 {
     fmt = detail::printFormatStringLiteral(out, fmt);
