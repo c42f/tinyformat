@@ -50,7 +50,7 @@ The other prints to the ``std::cout`` stream::
 Function reference
 ------------------
 
-All user-facing functions are defined in the namespace ``tinyformat``.  A
+All user facing functions are defined in the namespace ``tinyformat``.  A
 namespace alias ``tfm`` is provided to encourage brevity, but can easily be
 disabled if desired.
 
@@ -58,16 +58,18 @@ Three main interface functions are available: an iostreams-based ``format()``,
 a string-based ``format()`` and a ``printf()`` replacement.  All these
 functions can take an unlimited number of input arguments if compiled with
 C++0x varadic templates support.  For C++98 compatibility, an in-source python
-code generator (via the excellent cog.py, see
+code generator (using the excellent ``cog.py``; see
 http://nedbatchelder.com/code/cog/ ) has been used to generate multiple
-versions of the functions with up to 10 user-defined types.  This maximum can
-be customized by setting the maxParams parameter in the code generator.
+versions of the functions with up to 10 values of user-defined type.  This
+maximum can be customized by setting the ``maxParams`` parameter in the code
+generator and regenerating the code using ``cog.py``.
 
 
-The ``format()`` function taking a stream as the first argument is the main
-part of the tinyformat interface.  stream is the output stream, fmt is a
-format string in C99 ``printf()`` format, and the values to be formatted are a
-list of types ``T1, T2, ..., TN``, taken by const reference::
+The ``format()`` function which takes a stream as the first argument is the
+main part of the tinyformat interface.  ``stream`` is the output stream,
+``formatString`` is a format string in C99 ``printf()`` format, and the values
+to be formatted are a list of types ``T1, T2, ..., TN``, taken by const
+reference::
 
     template<typename T1, typename T2, ...>
     void format(std::ostream& stream, const char* formatString,
@@ -84,7 +86,7 @@ returns the resulting string::
                        const T1& value1, const T2& value1, ...)
 
 
-``printf()`` is a convenience function which calls ``format()`` with
+Finally, ``printf()`` is a convenience function which calls ``format()`` with
 ``std::cout`` as the first argument::
 
     template<typename T1, typename T2, ...>
@@ -96,22 +98,26 @@ Error handling
 --------------
 
 By default, tinyformat calls ``assert()`` if it encounters an error in the
-format string or number of arguments.  This behaviour can be changed by
-defining the ``TINYFORMAT_ERROR`` macro before including tinyformat.h, or
-editing the config section of the header.
+format string or number of arguments.  This behaviour can be changed (for
+example, to throw an exception) by defining the ``TINYFORMAT_ERROR`` macro
+before including tinyformat.h, or editing the config section of the header.
 
 
 Formatting user defined types
 -----------------------------
 
 User defined types with a stream insertion operator will be formatted using
-``operator<<(std::ostream&, T)`` by default.
+``operator<<(std::ostream&, T)`` by default.  The ``"%s"`` format specifier is
+suggested for user defined types, unless the type is inherently numeric.
 
 For further customization, the user can override the ``formatValue()``
-function to use the standard format specifier strings to modify the stream
-state.  If this isn't general enough, it's also possible to overload the
-``formatValueBasic()`` function to allow the user defined formatter to do its
-own parsing of the format specification string and setting of stream flags.
+function to specify formatting independently of the stream insertion operator.
+If you override this function, the library will have already parsed the format
+specification and set the stream flags accordingly.  If ``formatValue()`` isn't
+general enough, it's also possible to overload the ``formatValueBasic()``
+function to allow the user defined formatter to do its own parsing of the
+format specification string and setting of stream flags.  See the source for
+details on these functions.
 
 
 Rationale
@@ -155,6 +161,10 @@ syntax.
 
 Bugs
 ----
+
+Here's some known bugs which are probably cumbersome to fix - possibly
+cumbersome enough to compromise the goal of minimalism.  They're likely to
+remain until someone actually needs the corresponding feature.
 
 * Negative signs are not extended correctly when padding integer fields with
   zeros.
