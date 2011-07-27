@@ -1,5 +1,5 @@
 // tinyformat.h
-// Copyright (C) 2011, Christopher J. Foster
+// Copyright (C) 2011, Chris Foster [chris42f (at) gmail (d0t) com]
 //
 // Boost Software License - Version 1.0
 // 
@@ -28,61 +28,113 @@
 // Tinyformat: A minimal type safe printf-replacement library for C++
 //
 // This library aims to support 95% of casual C++ string formatting needs with
-// a single lightweight header file.
-//
-// Example usage:
-// --------------
-//
-// std::string name = "Neddy Seagoon";
-// float age = 31.41;
-// tfm::printf("My name is %s and I am %.2f years old", name, age);
+// a single lightweight header file.  Anything you can do with this library
+// can also be done with the standard C++ streams, but probably with
+// considerably more typing :)
 //
 //
-// Function reference:
-// -------------------
-// TODO
+// Example usage
+// -------------
+//
+// To print the date, we might have
+//
+// std::string weekday = "Wednesday";
+// const char* month = "July";
+// long day = 27;
+// int hour = 14;
+// int min = 44;
+//
+// tfm::format(std::cout, "%s, %s %d, %.2d:%.2d\n",
+//             weekday, month, day, hour, min);
+//
+// (The types here are intentionally odd to emphasize the type safety of the
+// interface.)  The same thing could be achieved using either of the two
+// convenience functions.  One returns a std::string:
+//
+// std::string date = tfm::format("%s, %s %d, %.2d:%.2d\n",
+//                                weekday, month, day, hour, min);
+// std::cout << date;
+//
+// The other prints to the std::cout stream:
+//
+// tfm::printf("%s, %s %d, %.2d:%.2d\n", weekday, month, day, hour, min);
+//
+//
+// Function reference
+// ------------------
+//
+// Three interface functions are available: an iostreams-based format(), a
+// string-based format() and printf().
+//
+//
+// The format() function taking a stream as the first argument is the main
+// part of the tinyformat interface.  stream is the output stream, fmt is a
+// format string in C99 printf() format, and the values to be formatted are a
+// list of types T1, T2, ... TN, taken by const reference.
+//
 // void format(std::ostream& stream, const char* formatString,
 //             const T1& value1, const T2& value1, ...)
 //
+//
+// The second format() is a convenience function which returns a
+// std::string rather than This convenience function simply calls the main
+// version of format() using a std::stringstream, and returns the resulting
+// string.
+//
 // std::string format(const char* formatString,
-//                      const T1& value1, const T2& value1, ...)
+//                    const T1& value1, const T2& value1, ...)
+//
+//
+// printf() is a convenience function which calls format() with std::cout
+// as the first argument.
 //
 // void printf(const char* formatString,
 //             const T1& value1, const T2& value1, ...)
 //
 //
-// Error handling:
-// ---------------
-// TODO
+// Error Handling
+// --------------
+//
+// By default, tinyformat calls assert() if it encounters an error in the
+// format string or number of arguments.  This behaviour can be changed by
+// defining the TINYFORMAT_ERROR macro before including tinyformat.h, or
+// editing the config section below.
 //
 //
-// Formatting user-defined types:
-// ------------------------------
-// TODO
+// Formatting user defined types
+// -----------------------------
+//
+// User defined types with a stream insertion operator<< will be formatted
+// using that operator by default.  For further customization, the user can
+// override the formatValue() and formatValueBasic() functions; see the
+// implementation for a detailed description.
 //
 //
-// Rationale:
-// ----------
+// Rationale
+// ---------
+// Or - why reinvent the wheel?
 //
-// There are lots of other excellent and complete solutions to the formatting
-// problem (boost::format and fastformat come to mind, but there are many
-// others).  Unfortunately, these tend to be very heavy dependencies for
-// the purposes of the average "casual" formatting.
+// It's true that there are lots of other excellent and complete solutions to
+// the formatting problem (boost::format and fastformat come to mind, but
+// there are many others).  Unfortunately, these tend to be very heavy
+// dependencies for the purposes of the average "casual" formatting usage.
+// This heaviness manifests in two ways:
 //
-// This heavyness manifests in two ways:
-// (1) Large build time dependencies, with many files
-// (2) Slow build times (this is particularly noticable with boost::format)
+// 1. Large build time dependencies with many source files.  This means the
+//    alternatives aren't suitable to bundle within other projects.
+// 2. Slow build times for every file using the formatting headers (this is
+//    very noticeable with boost/format.hpp. I'm not sure about the various
+//    other alternatives.)
 //
-// This library is also a reaction to the frustrating verbosity of
-// stream-based formatting and as such opts for the classic printf-style
-// design.
+// tinyformat tries to solve these problems while providing formatting which
+// is sufficiently general for "most purposes".
 //
 // Design goals:
 // * Simplicity and minimalism.  A single header file to include.
-// * Some extensibility for user-defined types.
+// * Extensibility for user-defined types.
 // * Parse standard C99 format strings
-// * Support as many commonly used printf() features as practical using
-//   the std::ostream features.
+// * Support as many commonly used printf() features as practical without
+//   compromising on simplicity.
 
 #ifndef TINYFORMAT_H_INCLUDED
 #define TINYFORMAT_H_INCLUDED
@@ -94,12 +146,22 @@
 namespace tinyformat {}
 //------------------------------------------------------------------------------
 // Config section.  Customize to your liking!
+
+// Namespace alias to encourage brevity
 namespace tfm = tinyformat;
 
-#define TINYFORMAT_ASSERT(x) assert(x)
+// Error handling; calls assert() by default.
+// #define TINYFORMAT_ERROR(reasonString) your_error_handler(reasonString)
+
+// Use C++0x varadic templates to make the code shorter & more general
+// #define TINYFORMAT_USE_VARADIC_TEMPLATES
 
 
 //------------------------------------------------------------------------------
+// Implementation details.
+#ifndef TINYFORMAT_ERROR
+#   define TINYFORMAT_ERROR(reason) assert(0 && reason)
+#endif
 
 #ifndef TINYFORMAT_USE_VARADIC_TEMPLATES
 #   ifdef __GXX_EXPERIMENTAL_CXX0X__
@@ -109,56 +171,7 @@ namespace tfm = tinyformat;
 
 namespace tinyformat {
 
-#ifdef TINYFORMAT_SHOULDNT_BE_DEFINED
-// The following three functions conceptually form the tinyformat interface
-
-// Format the arguments to the supplied stream.
-//
-// This function is the main part of the tinyformat interface.
-//
-// out is the output stream, fmt is a format string in C99 printf() format,
-// and args stands for a list of types T1, T2, ... TN, taken by const
-// reference.
-template<typename... Args>
-inline void format(std::ostream& out, const char* fmt, const Args&... args);
-
-
-// Convenience function: format the arguments into a std::string
-//
-// This convenience function simply calls the main version of format() using a
-// std::stringstream, and returns the resulting string.
-template<typename... Args>
-inline std::string format(const char* fmt, const Args&... args);
-
-
-// Convenience function: calls format() with std::cout as the first argument.
-template<typename... Args>
-inline void printf(const char* fmt, const Args&... args);
-#endif
-
-
-// Format a value into a stream. Called from format() for all types by default.
-//
-// Users may override this for their own types.  When this function is called,
-// the stream flags will have been modified according to the format string.
-//
-// By default, formatValue() uses the usual stream insertion operator
-// operator<< to format the type T.
-template<typename T>
-inline void formatValue(std::ostream& out, const char* fmtBegin,
-                        const char* fmtEnd, const T& value);
-
-
-// Format a value into a stream, called for all types by format()
-//
-// Users should override this function for their own types if they intend to 
-template<typename T>
-inline void formatValueBasic(std::ostream& out, const char* fmtBegin,
-                             const char* fmtEnd, const T& value);
-
-
 //------------------------------------------------------------------------------
-// Implementation details.
 namespace detail {
 
 // Parse and return an integer from the string c, as atoi()
@@ -198,13 +211,14 @@ inline void streamStateFromFormat(std::ostream& out, const char* fmtStart,
     // 2) Parse width 
     if(*c >= '0' && *c <= '9')
         out.width(parseIntAndAdvance(c));
-    // Ignore variable-specified width for simplicity.
     if(*c == '*')
-        ++c;
+        TINYFORMAT_ERROR("tinyformat: variable field widths not supported");
     // 3) Parse precision
     if(*c == '.')
     {
         ++c;
+        if(*c == '*')
+            TINYFORMAT_ERROR("tinyformat: variable field widths not supported");
         if(*c >= '0' && *c <= '9')
             out.precision(parseIntAndAdvance(c));
     }
@@ -257,6 +271,10 @@ inline void streamStateFromFormat(std::ostream& out, const char* fmtStart,
         case 's':
             // TODO - if precision is set, should truncate width.
             break;
+        case 'n':
+            // This will cause problems!
+            TINYFORMAT_ERROR("tinyformat: %n conversion spec not supported");
+            break;
     }
     // we shouldn't be past the end, though we may equal it if the input
     // format was broken and ended with '\0'.
@@ -264,61 +282,78 @@ inline void streamStateFromFormat(std::ostream& out, const char* fmtStart,
 }
 
 
-inline bool nextFormatFragment(const char* fmt, const char** formatBegin,
-                               const char** formatEnd)
+// Print literal part of format string and return next format spec position.
+//
+// Skips over any occurrences of '%%', printing a literal '%' to the output.
+// The position of the first non-'%' character of the next format spec is
+// returned, or the end of string.
+inline const char* printFormatStringLiteral(std::ostream& out, const char* fmt)
 {
-    // Skip through literal part of the string.
     const char* c = fmt;
-    while(*c != '\0' && *c != '%')
-        ++c;
-    *formatBegin = c;
-    *formatEnd = c;
-    if(*c == '\0')
-        return false;
-    // Now we have *c == '%', the start of the format specifier.
-    ++c;
-    if(*c == '%')
+    for(; *c != '\0'; ++c)
     {
-        // TODO: Proper % handling.
-        *formatEnd = c+1;
-        return true;
+        if(*c == '%')
+        {
+            out.write(fmt, c - fmt);
+            fmt = ++c;
+            if(*c != '%')
+                return c;
+            // for '%%' the required '%' will be tacked onto the next section.
+        }
     }
+    out.write(fmt, c - fmt);
+    return c;
+}
+
+
+inline const char* findFormatSpecEnd(const char* fmt)
+{
     // Advance to end of format specifier.
-    for(;*c != '\0'; ++c)
+    const char* c = fmt;
+    if(*c == '\0')
+        TINYFORMAT_ERROR("tinyformat: Not enough conversion specifiers in format string");
+    for(; *c != '\0'; ++c)
     {
         // For compatibility with C, argument length modifiers don't terminate
         // the format
         if(*c == 'l' || *c == 'h' || *c == 'L' ||
            *c == 'j' || *c == 'z' || *c == 't')
             continue;
-        // ... but any other upper or lower case letter does
+        // ... but for generality any other upper or lower case letter does
         if((*c >= 'A' && *c <= 'Z') || (*c >= 'a' && *c <= 'z'))
-            break;
+            return c+1;
     }
-    if(*c != '\0')
-        ++c;
-    *formatEnd = c;
-    if(*c == '\0')
-        return false;
-    return true;
+    TINYFORMAT_ERROR("tinyformat: Conversion spec incorrectly terminated by end of string");
+    return c;
 }
 
 } // namespace detail
 
 
+// Variable formatting functions.  May be overridden for user-defined types if
+// desired.
+
+
+// Format a value into a stream. Called from format() for all types by default.
+//
+// Users may override this for their own types.  When this function is called,
+// the stream flags will have been modified according to the format string.
+// The format specification is provided in the range [fmtBegin, fmtEnd).
+//
+// By default, formatValue() uses the usual stream insertion operator
+// operator<< to format the type T.
 template<typename T>
 inline void formatValue(std::ostream& out, const char* fmtBegin,
                         const char* fmtEnd, const T& value)
 {
-    // Use operator<< by default; may be overridden by user.
     out << value;
 }
 
 
+// Overridden to support '%c' conversion.
 inline void formatValue(std::ostream& out, const char* fmtBegin,
                         const char* fmtEnd, int value)
 {
-    // Overridden to support '%c' conversion.
     if(*(fmtEnd-1) == 'c')
         out << (char)value;
     else
@@ -326,6 +361,13 @@ inline void formatValue(std::ostream& out, const char* fmtBegin,
 }
 
 
+// Format a value into a stream, called for all types by format()
+//
+// Users should override this function for their own types if they intend to
+// completely customize the formatting, and don't want tinyformat to attempt
+// to set the stream flags based on the format specifier string.
+//
+// The format specification is provided in the range [fmtBegin, fmtEnd).
 template<typename T>
 inline void formatValueBasic(std::ostream& out, const char* fmtBegin,
                              const char* fmtEnd, const T& value)
@@ -347,34 +389,28 @@ inline void formatValueBasic(std::ostream& out, const char* fmtBegin,
 
 
 // Format function,  0-argument case.
-inline bool format(std::ostream& out, const char* fmt)
+inline void format(std::ostream& out, const char* fmt)
 {
-    const char* c = fmt;
-    while(*c != '\0' && *c != '%')
-        ++c;
-    out << fmt;
-    return *c != '%';
+    fmt = detail::printFormatStringLiteral(out, fmt);
+    if(*fmt != '\0')
+        TINYFORMAT_ERROR("tinyformat: Too many conversion specifiers in format string");
 }
 
 
 #ifdef TINYFORMAT_USE_VARADIC_TEMPLATES
 
-// N-argument case: formats one element and calls N-1 argument case.
+// N-argument case; formats one element and calls N-1 argument case.
 template<typename T1, typename... Args>
-inline bool format(std::ostream& out, const char* fmt, const T1& value1,
+inline void format(std::ostream& out, const char* fmt, const T1& value1,
                    const Args&... args)
 {
-    const char* literalEnd = 0;
-    const char* formatSpecEnd = 0;
-    detail::nextFormatFragment(fmt, &literalEnd, &formatSpecEnd);
-    out.write(fmt, literalEnd - fmt);
-    formatValueBasic(out, literalEnd+1, formatSpecEnd, value1);
-    format(out, formatSpecEnd, args...);
-    return true; // TODO
+    fmt = detail::printFormatStringLiteral(out, fmt);
+    const char* fmtEnd = detail::findFormatSpecEnd(fmt);
+    formatValueBasic(out, fmt, fmtEnd, value1);
+    format(out, fmtEnd, args...);
 }
 
-
-// Create a std::string rather than formatting to a stream.
+// Implement convenience functions in terms of format(stream, fmt, ...)
 template<typename... Args>
 inline std::string format(const char* fmt, const Args&... args)
 {
@@ -383,8 +419,6 @@ inline std::string format(const char* fmt, const Args&... args)
     return oss.str();
 }
 
-
-// Format to stdout, just like printf.
 template<typename... Args>
 inline void printf(const char* fmt, const Args&... args)
 {
@@ -395,8 +429,8 @@ inline void printf(const char* fmt, const Args&... args)
 
 // For C++98 we don't have varadic templates so we need to generate code
 // outside the language.  We could do this with some ugly macros but instead
-// let's use a short snippet of python code with the help of the cog code
-// generation framework:
+// let's use a short snippet of python code with the help of the excellent cog
+// code generation script ( http://nedbatchelder.com/code/cog/ )
 
 /*[[[cog
 
