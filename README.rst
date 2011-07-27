@@ -158,5 +158,5 @@ Bugs
 
 * Negative signs are not extended correctly when padding integer fields with
   zeros.
-* Field padding is unlikely to work correctly with compilcated user defined
+* Field padding is unlikely to work correctly with complicated user defined
   types.
