@@ -39,7 +39,7 @@ interface.)  The same thing could be achieved using either of the two
 convenience functions.  One returns a ``std::string``::
 
     std::string date = tfm::format("%s, %s %d, %.2d:%.2d\n",
-                                weekday, month, day, hour, min);
+                                   weekday, month, day, hour, min);
     std::cout << date;
 
 The other prints to the ``std::cout`` stream::
