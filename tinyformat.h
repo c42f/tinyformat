@@ -25,6 +25,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+//------------------------------------------------------------------------------
 // Tinyformat: A minimal type safe printf-replacement library for C++
 //
 // This library aims to support 95% of casual C++ string formatting needs with
@@ -135,6 +136,7 @@
 // * Parse standard C99 format strings
 // * Support as many commonly used printf() features as practical without
 //   compromising on simplicity.
+//
 
 #ifndef TINYFORMAT_H_INCLUDED
 #define TINYFORMAT_H_INCLUDED
@@ -188,12 +190,17 @@ inline int parseIntAndAdvance(const char*& c)
 // Parse the format string and set the stream state accordingly.
 //
 // The format mini-language recognized here is meant to be the one from C99,
-// with the form
+// with the form "%[flags][width][.precision][length]type".
 //
-// "%[flags][width][.precision][length]type".
-inline void streamStateFromFormat(std::ostream& out, const char* fmtStart,
-                                  const char* fmtEnd)
+// Some format specs (notably ones of the form "%.Ns" for some decimal number
+// N) request that the output be truncated to the given precision.  Truncation
+// is signalled by returning the truncation length.  If no truncation is to be
+// performed, -1 is returned.
+inline int streamStateFromFormat(std::ostream& out, const char* fmtStart,
+                                 const char* fmtEnd)
 {
+    int truncateLength = -1;
+    bool precisionSet = false;
     const char* c = fmtStart;
     // 1) Parse flags
     for(;; ++c)
@@ -220,7 +227,10 @@ inline void streamStateFromFormat(std::ostream& out, const char* fmtStart,
         if(*c == '*')
             TINYFORMAT_ERROR("tinyformat: variable field widths not supported");
         if(*c >= '0' && *c <= '9')
+        {
             out.precision(parseIntAndAdvance(c));
+            precisionSet = true;
+        }
     }
     // 4) Ignore any C99 length modifier
     while(*c == 'l' || *c == 'h' || *c == 'L' ||
@@ -269,7 +279,8 @@ inline void streamStateFromFormat(std::ostream& out, const char* fmtStart,
             // Handled elsewhere by overriding formatValue()
             break;
         case 's':
-            // TODO - if precision is set, should truncate width.
+            if(precisionSet)
+                truncateLength = out.precision();
             break;
         case 'n':
             // This will cause problems!
@@ -279,6 +290,7 @@ inline void streamStateFromFormat(std::ostream& out, const char* fmtStart,
     // we shouldn't be past the end, though we may equal it if the input
     // format was broken and ended with '\0'.
     assert(c <= fmtEnd);
+    return truncateLength;
 }
 
 
@@ -377,9 +389,24 @@ inline void formatValueBasic(std::ostream& out, const char* fmtBegin,
     std::streamsize precision = out.precision();
     std::ios::fmtflags flags = out.flags();
     char fill = out.fill();
-    // Set state & format the value
-    detail::streamStateFromFormat(out, fmtBegin, fmtEnd);
-    formatValue(out, fmtBegin, fmtEnd, value);
+    // Set stream state.
+    int truncateLength = detail::streamStateFromFormat(out, fmtBegin, fmtEnd);
+    // Format the value into the stream.
+    if(truncateLength < 0)
+        formatValue(out, fmtBegin, fmtEnd, value);
+    else
+    {
+        // Special case: the format spec told us to truncate the formatted
+        // result.  For generality, do this with a temporary stream.
+        std::ostringstream oss;
+        oss.copyfmt(out);
+        oss << value;
+        std::string result = oss.str();
+        if((int)result.size() > truncateLength)
+            out.write(result.c_str(), truncateLength);
+        else
+            out << result;
+    }
     // Restore stream state
     out.width(width);
     out.precision(precision);
