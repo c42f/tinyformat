@@ -136,10 +136,28 @@ manifests in two ways:
 2. Slow build times for every file using the formatting headers (this is very
    noticeable with boost/format.hpp. I'm not sure about the various other
    alternatives.)
+3. Code bloat due to instantiating a lot of templates
 
 Tinyformat tries to solve these problems while providing formatting which is
 sufficiently general for most incidental day to day uses.  If you need a very
 general or very performant library, tinyformat is probably not for you.
+
+The script ``bloat_test.sh`` tests whether tinyformat succeeds in avoiding
+compile time and code bloat.  The idea is to include ``tinyformat.h`` into 100
+translation units and use ``printf()`` five times in each.  The resulting
+executable size and compile time (g++-4.4.3, linux ubuntu 10.04, best of three)
+is shown in the following table:
+
+====================== ================== ==========================
+test name              total compile time executable size (stripped)
+====================== ================== ==========================
+printf                 1.2s               44K  (36K)
+std::ostream           8.5s               84K  (64K)
+tinyformat             12.9s              172K (140K)
+tinyformat, c++0x mode 14.8s              172K (140K)
+tinyformat, no inlines 12.0s              128K (100K)
+boost::format          51.6s              772K (676K)
+====================== ================== ==========================
 
 
 License

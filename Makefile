@@ -12,3 +12,4 @@ tinyformat_test_cxx0x: tinyformat.h tinyformat_test.cpp
 
 clean:
 	rm -f tinyformat_test_cxx98 tinyformat_test_cxx0x
+	rm -f _bloat_test_tmp_*
