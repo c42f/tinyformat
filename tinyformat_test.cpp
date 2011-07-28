@@ -31,6 +31,37 @@ void runTest(const Args&... args)
     catch(std::runtime_error&) {}                           \
 }
 
+
+#ifndef TINYFORMAT_USE_VARADIC_TEMPLATES
+
+// Test wrapping to create our own function which calls through to tfm::format
+struct TestWrap
+{
+    std::ostringstream m_oss;
+#   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS int code,
+    // std::string error(int code, const char* fmt, const Args&... args);
+    TINYFORMAT_WRAP_FORMAT(std::string, error,
+                        m_oss.clear(); m_oss << code << ": ";,
+                        m_oss,
+                        return m_oss.str();)
+#   undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
+};
+
+void testWrap()
+{
+    TestWrap wrap;
+    assert(wrap.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
+           "10: someformat asdf:2:4");
+}
+
+#else
+void testWrap()
+{
+}
+
+#endif // TINYFORMAT_USE_VARADIC_TEMPLATES
+
+
 int main()
 {
     // General "complicated" format spec test
@@ -84,6 +115,8 @@ int main()
     EXPECT_ERROR(
         tfm::format("%123", 10)
     )
+
+    testWrap();
 
     return 0;
 }

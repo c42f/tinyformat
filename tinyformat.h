@@ -70,7 +70,36 @@
 // tfm::printf("%s, %s %d, %.2d:%.2d\n", weekday, month, day, hour, min);
 //
 //
-// For full docs, see the accompanying README.
+// Brief outline of functionality
+// ------------------------------
+//
+// (For full docs, see the accompanying README)
+//
+//
+// Interface functions:
+//
+//  template<typename T1, typename T2, ...>
+//  void format(std::ostream& stream, const char* formatString,
+//              const T1& value1, const T2& value1, ...)
+//
+//  template<typename T1, typename T2, ...>
+//  std::string format(const char* formatString,
+//                     const T1& value1, const T2& value1, ...)
+//
+//  template<typename T1, typename T2, ...>
+//  void printf(const char* formatString,
+//              const T1& value1, const T2& value1, ...)
+//
+//
+// Error handling: Define TINYFORMAT_ERROR to customize the error handling,
+// otherwise calls assert() on error.
+//
+// User defined types: Overload formatValue() or formatValueBasic() to
+// customize printing of user defined types.  Uses operator<< by default.
+//
+// Wrapping tfm::format inside a user defined format function: See the macros
+// TINYFORMAT_WRAP_FORMAT and TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS.
+
 
 
 #ifndef TINYFORMAT_H_INCLUDED
@@ -415,274 +444,250 @@ inline void printf(const char* fmt, const Args&... args)
 
 /*[[[cog
 
-template = \
-'''
-// %(i)s argument versions
-template<%(typenameList)s>
-inline void format(std::ostream& out, const char* fmt, %(paramList)s)
-{
-    fmt = detail::printFormatStringLiteral(out, fmt);
-    const char* fmtEnd = detail::findFormatSpecEnd(fmt);
-    formatValueBasic(out, fmt, fmtEnd, v1);
-    format(%(nextArgList)s);
-}
-template<%(typenameList)s>
-inline std::string format(const char* fmt, %(paramList)s)
-{
-    std::ostringstream oss;
-    format(oss, fmt, %(argList)s);
-    return oss.str();
-}
-template<%(typenameList)s>
-inline void printf(const char* fmt, %(paramList)s)
-{
-    format(std::cout, fmt, %(argList)s);
-}'''
-
 maxParams = 10
 
-for i in range(1,maxParams+1):
-    paramRange = range(1,i+1)
-    typenameList = ', '.join(['typename T%d' % (j,) for j in paramRange])
-    paramList = ', '.join(['const T%d& v%d' % (j,j) for j in paramRange])
-    argList = ', '.join(['v%d' % (j,) for j in paramRange])
-    nextArgList = ', '.join(['out', 'fmtEnd'] +
-                            ['v%d' % (j,) for j in paramRange[1:]])
-    cog.outl(template % locals())
+# prepend a comman if the string isn't empty.
+def prependComma(str):
+    return '' if str == '' else ', ' + str
+
+# Append backslashes to lines so they appear as a macro in C++
+# lineLen is the desired padding before the backslash
+def formatAsMacro(str, lineLen=75):
+    lines = str.splitlines()
+    lines = [l+' '*max(0, lineLen-len(l)) for l in lines]
+    return '\\\n'.join(lines) + '\\'
+
+# Fill out the given string template.
+def fillTemplate(template, minParams=0, formatFunc=lambda s: s):
+    for i in range(minParams,maxParams+1):
+        paramRange = range(1,i+1)
+        templateSpec = ', '.join(['typename T%d' % (j,) for j in paramRange])
+        if templateSpec != '':
+            templateSpec = 'template<%s>' % (templateSpec,)
+        paramList = prependComma(', '.join(['const T%d& v%d' % (j,j)
+                                            for j in paramRange]))
+        argList = prependComma(', '.join(['v%d' % (j,) for j in paramRange]))
+        argListNoHead = prependComma(', '.join(['v%d' % (j,)
+                                                for j in paramRange[1:]]))
+        cog.outl(formatFunc(template % locals()))
+
+fillTemplate(
+'''%(templateSpec)s
+inline void format(std::ostream& out, const char* fmt %(paramList)s)
+{
+    fmt = detail::printFormatStringLiteral(out, fmt);
+    const char* fmtEnd = detail::findFormatSpecEnd(fmt);
+    formatValueBasic(out, fmt, fmtEnd, v1);
+    format(out, fmtEnd %(argListNoHead)s);
+}''', minParams=1)
+
+cog.outl('\n')
+
+cog.outl(formatAsMacro(
+'''#define TINYFORMAT_WRAP_FORMAT(returnType, funcName, bodyPrefix, streamName, bodySuffix)'''))
+
+fillTemplate(
+r'''%(templateSpec)s
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt
+                           %(paramList)s)
+{
+    bodyPrefix
+    tinyformat::format(streamName, fmt %(argList)s);
+    bodySuffix
+}''', minParams=0, formatFunc=formatAsMacro)
+cog.outl()
+
 ]]]*/
-
-// 1 argument versions
 template<typename T1>
-inline void format(std::ostream& out, const char* fmt, const T1& v1)
+inline void format(std::ostream& out, const char* fmt , const T1& v1)
 {
     fmt = detail::printFormatStringLiteral(out, fmt);
     const char* fmtEnd = detail::findFormatSpecEnd(fmt);
     formatValueBasic(out, fmt, fmtEnd, v1);
-    format(out, fmtEnd);
-}
-template<typename T1>
-inline std::string format(const char* fmt, const T1& v1)
-{
-    std::ostringstream oss;
-    format(oss, fmt, v1);
-    return oss.str();
-}
-template<typename T1>
-inline void printf(const char* fmt, const T1& v1)
-{
-    format(std::cout, fmt, v1);
-}
-
-// 2 argument versions
-template<typename T1, typename T2>
-inline void format(std::ostream& out, const char* fmt, const T1& v1, const T2& v2)
-{
-    fmt = detail::printFormatStringLiteral(out, fmt);
-    const char* fmtEnd = detail::findFormatSpecEnd(fmt);
-    formatValueBasic(out, fmt, fmtEnd, v1);
-    format(out, fmtEnd, v2);
+    format(out, fmtEnd );
 }
 template<typename T1, typename T2>
-inline std::string format(const char* fmt, const T1& v1, const T2& v2)
-{
-    std::ostringstream oss;
-    format(oss, fmt, v1, v2);
-    return oss.str();
-}
-template<typename T1, typename T2>
-inline void printf(const char* fmt, const T1& v1, const T2& v2)
-{
-    format(std::cout, fmt, v1, v2);
-}
-
-// 3 argument versions
-template<typename T1, typename T2, typename T3>
-inline void format(std::ostream& out, const char* fmt, const T1& v1, const T2& v2, const T3& v3)
+inline void format(std::ostream& out, const char* fmt , const T1& v1, const T2& v2)
 {
     fmt = detail::printFormatStringLiteral(out, fmt);
     const char* fmtEnd = detail::findFormatSpecEnd(fmt);
     formatValueBasic(out, fmt, fmtEnd, v1);
-    format(out, fmtEnd, v2, v3);
+    format(out, fmtEnd , v2);
 }
 template<typename T1, typename T2, typename T3>
-inline std::string format(const char* fmt, const T1& v1, const T2& v2, const T3& v3)
-{
-    std::ostringstream oss;
-    format(oss, fmt, v1, v2, v3);
-    return oss.str();
-}
-template<typename T1, typename T2, typename T3>
-inline void printf(const char* fmt, const T1& v1, const T2& v2, const T3& v3)
-{
-    format(std::cout, fmt, v1, v2, v3);
-}
-
-// 4 argument versions
-template<typename T1, typename T2, typename T3, typename T4>
-inline void format(std::ostream& out, const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4)
+inline void format(std::ostream& out, const char* fmt , const T1& v1, const T2& v2, const T3& v3)
 {
     fmt = detail::printFormatStringLiteral(out, fmt);
     const char* fmtEnd = detail::findFormatSpecEnd(fmt);
     formatValueBasic(out, fmt, fmtEnd, v1);
-    format(out, fmtEnd, v2, v3, v4);
+    format(out, fmtEnd , v2, v3);
 }
 template<typename T1, typename T2, typename T3, typename T4>
-inline std::string format(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4)
-{
-    std::ostringstream oss;
-    format(oss, fmt, v1, v2, v3, v4);
-    return oss.str();
-}
-template<typename T1, typename T2, typename T3, typename T4>
-inline void printf(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4)
-{
-    format(std::cout, fmt, v1, v2, v3, v4);
-}
-
-// 5 argument versions
-template<typename T1, typename T2, typename T3, typename T4, typename T5>
-inline void format(std::ostream& out, const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5)
+inline void format(std::ostream& out, const char* fmt , const T1& v1, const T2& v2, const T3& v3, const T4& v4)
 {
     fmt = detail::printFormatStringLiteral(out, fmt);
     const char* fmtEnd = detail::findFormatSpecEnd(fmt);
     formatValueBasic(out, fmt, fmtEnd, v1);
-    format(out, fmtEnd, v2, v3, v4, v5);
+    format(out, fmtEnd , v2, v3, v4);
 }
 template<typename T1, typename T2, typename T3, typename T4, typename T5>
-inline std::string format(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5)
-{
-    std::ostringstream oss;
-    format(oss, fmt, v1, v2, v3, v4, v5);
-    return oss.str();
-}
-template<typename T1, typename T2, typename T3, typename T4, typename T5>
-inline void printf(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5)
-{
-    format(std::cout, fmt, v1, v2, v3, v4, v5);
-}
-
-// 6 argument versions
-template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-inline void format(std::ostream& out, const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6)
+inline void format(std::ostream& out, const char* fmt , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5)
 {
     fmt = detail::printFormatStringLiteral(out, fmt);
     const char* fmtEnd = detail::findFormatSpecEnd(fmt);
     formatValueBasic(out, fmt, fmtEnd, v1);
-    format(out, fmtEnd, v2, v3, v4, v5, v6);
+    format(out, fmtEnd , v2, v3, v4, v5);
 }
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-inline std::string format(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6)
-{
-    std::ostringstream oss;
-    format(oss, fmt, v1, v2, v3, v4, v5, v6);
-    return oss.str();
-}
-template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-inline void printf(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6)
-{
-    format(std::cout, fmt, v1, v2, v3, v4, v5, v6);
-}
-
-// 7 argument versions
-template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-inline void format(std::ostream& out, const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7)
+inline void format(std::ostream& out, const char* fmt , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6)
 {
     fmt = detail::printFormatStringLiteral(out, fmt);
     const char* fmtEnd = detail::findFormatSpecEnd(fmt);
     formatValueBasic(out, fmt, fmtEnd, v1);
-    format(out, fmtEnd, v2, v3, v4, v5, v6, v7);
+    format(out, fmtEnd , v2, v3, v4, v5, v6);
 }
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-inline std::string format(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7)
-{
-    std::ostringstream oss;
-    format(oss, fmt, v1, v2, v3, v4, v5, v6, v7);
-    return oss.str();
-}
-template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-inline void printf(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7)
-{
-    format(std::cout, fmt, v1, v2, v3, v4, v5, v6, v7);
-}
-
-// 8 argument versions
-template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-inline void format(std::ostream& out, const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8)
+inline void format(std::ostream& out, const char* fmt , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7)
 {
     fmt = detail::printFormatStringLiteral(out, fmt);
     const char* fmtEnd = detail::findFormatSpecEnd(fmt);
     formatValueBasic(out, fmt, fmtEnd, v1);
-    format(out, fmtEnd, v2, v3, v4, v5, v6, v7, v8);
+    format(out, fmtEnd , v2, v3, v4, v5, v6, v7);
 }
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-inline std::string format(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8)
-{
-    std::ostringstream oss;
-    format(oss, fmt, v1, v2, v3, v4, v5, v6, v7, v8);
-    return oss.str();
-}
-template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-inline void printf(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8)
-{
-    format(std::cout, fmt, v1, v2, v3, v4, v5, v6, v7, v8);
-}
-
-// 9 argument versions
-template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-inline void format(std::ostream& out, const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9)
+inline void format(std::ostream& out, const char* fmt , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8)
 {
     fmt = detail::printFormatStringLiteral(out, fmt);
     const char* fmtEnd = detail::findFormatSpecEnd(fmt);
     formatValueBasic(out, fmt, fmtEnd, v1);
-    format(out, fmtEnd, v2, v3, v4, v5, v6, v7, v8, v9);
+    format(out, fmtEnd , v2, v3, v4, v5, v6, v7, v8);
 }
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-inline std::string format(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9)
-{
-    std::ostringstream oss;
-    format(oss, fmt, v1, v2, v3, v4, v5, v6, v7, v8, v9);
-    return oss.str();
-}
-template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-inline void printf(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9)
-{
-    format(std::cout, fmt, v1, v2, v3, v4, v5, v6, v7, v8, v9);
-}
-
-// 10 argument versions
-template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-inline void format(std::ostream& out, const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10)
+inline void format(std::ostream& out, const char* fmt , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9)
 {
     fmt = detail::printFormatStringLiteral(out, fmt);
     const char* fmtEnd = detail::findFormatSpecEnd(fmt);
     formatValueBasic(out, fmt, fmtEnd, v1);
-    format(out, fmtEnd, v2, v3, v4, v5, v6, v7, v8, v9, v10);
+    format(out, fmtEnd , v2, v3, v4, v5, v6, v7, v8, v9);
 }
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-inline std::string format(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10)
+inline void format(std::ostream& out, const char* fmt , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10)
 {
-    std::ostringstream oss;
-    format(oss, fmt, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10);
-    return oss.str();
+    fmt = detail::printFormatStringLiteral(out, fmt);
+    const char* fmtEnd = detail::findFormatSpecEnd(fmt);
+    formatValueBasic(out, fmt, fmtEnd, v1);
+    format(out, fmtEnd , v2, v3, v4, v5, v6, v7, v8, v9, v10);
 }
-template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-inline void printf(const char* fmt, const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10)
-{
-    format(std::cout, fmt, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10);
-}
+
+
+#define TINYFORMAT_WRAP_FORMAT(returnType, funcName, bodyPrefix, streamName, bodySuffix)\
+                                                                           \
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
+                           )                                               \
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::format(streamName, fmt );                                  \
+    bodySuffix                                                             \
+}                                                                          \
+template<typename T1>                                                      \
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
+                           , const T1& v1)                                 \
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::format(streamName, fmt , v1);                              \
+    bodySuffix                                                             \
+}                                                                          \
+template<typename T1, typename T2>                                         \
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
+                           , const T1& v1, const T2& v2)                   \
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::format(streamName, fmt , v1, v2);                          \
+    bodySuffix                                                             \
+}                                                                          \
+template<typename T1, typename T2, typename T3>                            \
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
+                           , const T1& v1, const T2& v2, const T3& v3)     \
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::format(streamName, fmt , v1, v2, v3);                      \
+    bodySuffix                                                             \
+}                                                                          \
+template<typename T1, typename T2, typename T3, typename T4>               \
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
+                           , const T1& v1, const T2& v2, const T3& v3, const T4& v4)\
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::format(streamName, fmt , v1, v2, v3, v4);                  \
+    bodySuffix                                                             \
+}                                                                          \
+template<typename T1, typename T2, typename T3, typename T4, typename T5>  \
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
+                           , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5)\
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::format(streamName, fmt , v1, v2, v3, v4, v5);              \
+    bodySuffix                                                             \
+}                                                                          \
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>\
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
+                           , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6)\
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::format(streamName, fmt , v1, v2, v3, v4, v5, v6);          \
+    bodySuffix                                                             \
+}                                                                          \
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>\
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
+                           , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7)\
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::format(streamName, fmt , v1, v2, v3, v4, v5, v6, v7);      \
+    bodySuffix                                                             \
+}                                                                          \
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>\
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
+                           , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8)\
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::format(streamName, fmt , v1, v2, v3, v4, v5, v6, v7, v8);  \
+    bodySuffix                                                             \
+}                                                                          \
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>\
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
+                           , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9)\
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::format(streamName, fmt , v1, v2, v3, v4, v5, v6, v7, v8, v9);\
+    bodySuffix                                                             \
+}                                                                          \
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>\
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
+                           , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10)\
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::format(streamName, fmt , v1, v2, v3, v4, v5, v6, v7, v8, v9, v10);\
+    bodySuffix                                                             \
+}                                                                          \
+
 //[[[end]]]
 
-// Special cases not covered by codegen above.
-inline std::string format(const char* fmt)
-{
-    std::ostringstream oss;
-    format(oss, fmt);
-    return oss.str();
-}
-inline void printf(const char* fmt)
-{
-    format(std::cout, fmt);
-}
+// Define the convenience functions using the macros defined above,
+// in terms of format(stream, fmt, ...)
+//
+// Users can define their own wrapper functions this way too.
+//
+// Neither format() or printf() has extra args, so define to nothing.  Note
+// that TINYFORMAT_WRAP_EXTRA_ARGS cannot be a macro parameter because it must
+// expand to a comma separated list (or nothing, as here)
+#define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
+// std::string format(const char* fmt, const Args&... args);
+TINYFORMAT_WRAP_FORMAT(std::string, format,
+                       std::ostringstream oss;, oss,
+                       return oss.str();)
+// void printf(const char* fmt, const Args&... args)
+TINYFORMAT_WRAP_FORMAT(void, printf, /*empty*/, std::cout, /*empty*/)
+#undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 
 #endif
 

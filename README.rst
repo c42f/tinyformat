@@ -120,6 +120,45 @@ format specification string and setting of stream flags.  See the source for
 details on these functions.
 
 
+Wrapping tfm::format() inside a user defined format function
+------------------------------------------------------------
+
+Suppose you wanted to define your own function which wraps ``tfm::format``.
+For example, consider an error function taking an error code, which in C++0x
+might be written simply as::
+
+    template<typename... Args>
+    void error(int code, const char* fmt, const Args&... args)
+    {
+        std::cerr << "error (code " << code << ")";
+        tfm::format(std::cerr, fmt, args...);
+    }
+
+Unfortunately it's rather painful to do this with C++98, because you must
+write a version of ``error()`` for every number of arguments you want to
+support.  However, tinyformat provides a macro ``TINYFORMAT_WRAP_FORMAT`` to
+do this for you in a handy range of cases.  (In fact, this is the way that the
+convenience functions ``format()`` and ``printf()`` are defined internally.)
+Here's what the usage looks like::
+
+    #define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS int code,
+    TINYFORMAT_WRAP_FORMAT(
+        void,                                        /* return type */
+        error,                                       /* function name */
+        std::cerr << "error (code " << code << ")";, /* stuff before format()*/
+        std::cerr,                                   /* stream name */
+        /*empty*/                                    /* stuff after format() */
+    )
+    #undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
+
+This defines an overloaded set of ``error()`` functions which act like
+the C++0x definition given above, at least up until ``maxPararms`` format
+parameters.  Note that the content of ``TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS``
+*must contain a trailing comma for every extra argument* and therefore can't be
+a normal macro parameter to ``TINYFORMAT_WRAP_FORMAT`` (the commas would look
+like more than one macro argument to the preprocessor).
+
+
 Rationale
 ---------
 
@@ -175,7 +214,10 @@ Author and acknowledgments
 Tinyformat was written by Chris Foster [chris42f (at) gmail (d0t) com].  The
 implementation owes much to ``boost::format`` for showing that it's fairly
 easy to use stream based formatting to simulate most of the ``printf()``
-syntax.
+syntax.  Douglas Gregor's introduction to varadic templates
+-- see http://www.generic-programming.org/~dgregor/cpp/variadic-templates.html --
+was also helpful, especially since it solves exactly the ``printf()`` problem
+for the case of trivial format strings.
 
 Bugs
 ----
