@@ -405,7 +405,7 @@ void formatValueBasic(std::ostream& out, const char* fmtBegin,
         // result.  For generality, do this with a temporary stream.
         std::ostringstream oss;
         oss.copyfmt(out);
-        oss << value;
+        formatValue(oss, fmtBegin, fmtEnd, value);
         std::string result = oss.str();
         if((int)result.size() > truncateLength)
             out.write(result.c_str(), truncateLength);
