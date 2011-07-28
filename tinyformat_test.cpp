@@ -11,6 +11,7 @@
 #include "tinyformat.h"
 #include <cassert>
 
+// Compare result of tfm::format() to C's sprintf().
 template<typename... Args>
 void runTest(const Args&... args)
 {
@@ -32,8 +33,6 @@ void runTest(const Args&... args)
 }
 
 
-#ifndef TINYFORMAT_USE_VARADIC_TEMPLATES
-
 // Test wrapping to create our own function which calls through to tfm::format
 struct TestWrap
 {
@@ -47,19 +46,13 @@ struct TestWrap
 #   undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 };
 
+
 void testWrap()
 {
     TestWrap wrap;
     assert(wrap.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
            "10: someformat asdf:2:4");
 }
-
-#else
-void testWrap()
-{
-}
-
-#endif // TINYFORMAT_USE_VARADIC_TEMPLATES
 
 
 int main()

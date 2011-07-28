@@ -325,6 +325,7 @@ inline const char* findFormatSpecEnd(const char* fmt)
 } // namespace detail
 
 
+//------------------------------------------------------------------------------
 // Variable formatting functions.  May be overridden for user-defined types if
 // desired.
 
@@ -398,6 +399,7 @@ inline void formatValueBasic(std::ostream& out, const char* fmtBegin,
 }
 
 
+//------------------------------------------------------------------------------
 // Format function, 0-argument case.
 inline void format(std::ostream& out, const char* fmt)
 {
@@ -407,7 +409,13 @@ inline void format(std::ostream& out, const char* fmt)
 }
 
 
+// Define N-argument format function.
+//
+// There's two cases here: c++0x and c++98.
+
 #ifdef TINYFORMAT_USE_VARADIC_TEMPLATES
+
+// First, the simple definition for C++0x:
 
 // N-argument case; formats one element and calls N-1 argument case.
 template<typename T1, typename... Args>
@@ -418,21 +426,6 @@ inline void format(std::ostream& out, const char* fmt, const T1& value1,
     const char* fmtEnd = detail::findFormatSpecEnd(fmt);
     formatValueBasic(out, fmt, fmtEnd, value1);
     format(out, fmtEnd, args...);
-}
-
-// Implement convenience functions in terms of format(stream, fmt, ...)
-template<typename... Args>
-inline std::string format(const char* fmt, const Args&... args)
-{
-    std::ostringstream oss;
-    format(oss, fmt, args...);
-    return oss.str();
-}
-
-template<typename... Args>
-inline void printf(const char* fmt, const Args&... args)
-{
-    format(std::cout, fmt, args...);
 }
 
 #else
@@ -446,7 +439,7 @@ inline void printf(const char* fmt, const Args&... args)
 
 maxParams = 10
 
-# prepend a comman if the string isn't empty.
+# prepend a comma if the string isn't empty.
 def prependComma(str):
     return '' if str == '' else ', ' + str
 
@@ -480,22 +473,6 @@ inline void format(std::ostream& out, const char* fmt %(paramList)s)
     formatValueBasic(out, fmt, fmtEnd, v1);
     format(out, fmtEnd %(argListNoHead)s);
 }''', minParams=1)
-
-cog.outl('\n')
-
-cog.outl(formatAsMacro(
-'''#define TINYFORMAT_WRAP_FORMAT(returnType, funcName, bodyPrefix, streamName, bodySuffix)'''))
-
-fillTemplate(
-r'''%(templateSpec)s
-inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt
-                           %(paramList)s)
-{
-    bodyPrefix
-    tinyformat::format(streamName, fmt %(argList)s);
-    bodySuffix
-}''', minParams=0, formatFunc=formatAsMacro)
-cog.outl()
 
 ]]]*/
 template<typename T1>
@@ -578,8 +555,38 @@ inline void format(std::ostream& out, const char* fmt , const T1& v1, const T2& 
     formatValueBasic(out, fmt, fmtEnd, v1);
     format(out, fmtEnd , v2, v3, v4, v5, v6, v7, v8, v9, v10);
 }
+//[[[end]]]
+
+#endif // End C++98 varadic template emulation for format()
 
 
+//------------------------------------------------------------------------------
+// Define the macro TINYFORMAT_WRAP_FORMAT, which can be used to wrap a call
+// to tfm::format for C++98 support.
+//
+// We make this available in both C++0x and C++98 mode for convenience so that
+// users can choose not to write out the C++0x version if they're primarily
+// interested in C++98 support, but still have things work with C++0x.
+//
+// Note that TINYFORMAT_WRAP_EXTRA_ARGS cannot be a macro parameter because it
+// must expand to a comma separated list (or nothing, as here)/
+
+/*[[[cog
+cog.outl(formatAsMacro(
+'''#define TINYFORMAT_WRAP_FORMAT(returnType, funcName, bodyPrefix, streamName, bodySuffix)'''))
+
+fillTemplate(
+r'''%(templateSpec)s
+inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt
+                           %(paramList)s)
+{
+    bodyPrefix
+    tinyformat::format(streamName, fmt %(argList)s);
+    bodySuffix
+}''', minParams=0, formatFunc=formatAsMacro)
+cog.outl()
+
+]]]*/
 #define TINYFORMAT_WRAP_FORMAT(returnType, funcName, bodyPrefix, streamName, bodySuffix)\
                                                                            \
 inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
@@ -672,14 +679,32 @@ inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
 
 //[[[end]]]
 
-// Define the convenience functions using the macros defined above,
-// in terms of format(stream, fmt, ...)
+
+//------------------------------------------------------------------------------
+// Implement convenience functions in terms of format(stream, fmt, ...).
+// Again, there's two cases.
+#ifdef TINYFORMAT_USE_VARADIC_TEMPLATES
+
+// C++0x - the simple case
+template<typename... Args>
+inline std::string format(const char* fmt, const Args&... args)
+{
+    std::ostringstream oss;
+    format(oss, fmt, args...);
+    return oss.str();
+}
+
+template<typename... Args>
+inline void printf(const char* fmt, const Args&... args)
+{
+    format(std::cout, fmt, args...);
+}
+
+#else
+
+// C++98 - define the convenience functions using the wrapping macros
 //
-// Users can define their own wrapper functions this way too.
-//
-// Neither format() or printf() has extra args, so define to nothing.  Note
-// that TINYFORMAT_WRAP_EXTRA_ARGS cannot be a macro parameter because it must
-// expand to a comma separated list (or nothing, as here)
+// Neither format() or printf() has extra args, so define to nothing.
 #define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 // std::string format(const char* fmt, const Args&... args);
 TINYFORMAT_WRAP_FORMAT(std::string, format,
