@@ -2,11 +2,9 @@
 #include <climits>
 #include <cfloat>
 
+// Throw instead of abort() so we can test error conditions.
 #define TINYFORMAT_ERROR(reason) \
     throw std::runtime_error(reason);
-
-// Define the following to test codegen'd C++98 version.
-//#define TINYFORMAT_NO_VARIADIC_TEMPLATES
 
 #include "tinyformat.h"
 #include <cassert>
@@ -108,6 +106,15 @@ int main()
     EXPECT_ERROR(
         tfm::format("%123", 10)
     )
+
+    // Test that formatting is independent of underlying stream state.
+    std::ostringstream oss;
+    oss.width(20);
+    oss.precision(10);
+    oss.fill('*');
+    oss.setf(std::ios::scientific);
+    tfm::format(oss, "%f", 10.1234123412341234);
+    assert(oss.str() == "10.123412");
 
     testWrap();
 

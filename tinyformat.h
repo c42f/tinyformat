@@ -164,6 +164,15 @@ inline int parseIntAndAdvance(const char*& c)
 inline int streamStateFromFormat(std::ostream& out, const char* fmtStart,
                                  const char* fmtEnd)
 {
+    // Reset stream state to defaults.
+    out.width(0);
+    out.precision(6);
+    out.fill(' ');
+    // Reset most flags, though leave the boolalpha state alone - there's no
+    // equivalent format flag anyway.  Also ignore irrelevant unitbuf & skipws.
+    out.unsetf(std::ios::adjustfield | std::ios::basefield |
+               std::ios::floatfield | std::ios::showbase |
+               std::ios::showpoint | std::ios::showpos | std::ios::uppercase);
     int truncateLength = -1;
     bool precisionSet = false;
     const char* c = fmtStart;
