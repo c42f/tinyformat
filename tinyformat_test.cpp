@@ -6,7 +6,7 @@
     throw std::runtime_error(reason);
 
 // Define the following to test codegen'd C++98 version.
-//#define TINYFORMAT_NO_VARADIC_TEMPLATES
+//#define TINYFORMAT_NO_VARIADIC_TEMPLATES
 
 #include "tinyformat.h"
 #include <cassert>

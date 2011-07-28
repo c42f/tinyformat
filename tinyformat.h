@@ -119,9 +119,9 @@ namespace tfm = tinyformat;
 // Error handling; calls assert() by default.
 // #define TINYFORMAT_ERROR(reasonString) your_error_handler(reasonString)
 
-// Define for C++0x varadic templates which make the code shorter & more
+// Define for C++0x variadic templates which make the code shorter & more
 // general.  Ideally C++0x support will be autodetected on all major compilers.
-// #define TINYFORMAT_USE_VARADIC_TEMPLATES
+// #define TINYFORMAT_USE_VARIADIC_TEMPLATES
 
 
 //------------------------------------------------------------------------------
@@ -130,9 +130,9 @@ namespace tfm = tinyformat;
 #   define TINYFORMAT_ERROR(reason) assert(0 && reason)
 #endif
 
-#if !defined(TINYFORMAT_USE_VARADIC_TEMPLATES) && !defined(TINYFORMAT_NO_VARADIC_TEMPLATES)
+#if !defined(TINYFORMAT_USE_VARIADIC_TEMPLATES) && !defined(TINYFORMAT_NO_VARIADIC_TEMPLATES)
 #   ifdef __GXX_EXPERIMENTAL_CXX0X__
-#       define TINYFORMAT_USE_VARADIC_TEMPLATES
+#       define TINYFORMAT_USE_VARIADIC_TEMPLATES
 #   endif
 #endif
 
@@ -413,7 +413,7 @@ inline void format(std::ostream& out, const char* fmt)
 //
 // There's two cases here: c++0x and c++98.
 
-#ifdef TINYFORMAT_USE_VARADIC_TEMPLATES
+#ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
 
 // First, the simple definition for C++0x:
 
@@ -430,7 +430,7 @@ inline void format(std::ostream& out, const char* fmt, const T1& value1,
 
 #else
 
-// For C++98 we don't have varadic templates so we need to generate code
+// For C++98 we don't have variadic templates so we need to generate code
 // outside the language.  We could do this with some ugly macros but instead
 // let's use a short snippet of python code with the help of the excellent cog
 // code generation script ( http://nedbatchelder.com/code/cog/ )
@@ -557,7 +557,7 @@ inline void format(std::ostream& out, const char* fmt , const T1& v1, const T2& 
 }
 //[[[end]]]
 
-#endif // End C++98 varadic template emulation for format()
+#endif // End C++98 variadic template emulation for format()
 
 
 //------------------------------------------------------------------------------
@@ -683,7 +683,7 @@ inline returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt\
 //------------------------------------------------------------------------------
 // Implement convenience functions in terms of format(stream, fmt, ...).
 // Again, there's two cases.
-#ifdef TINYFORMAT_USE_VARADIC_TEMPLATES
+#ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
 
 // C++0x - the simple case
 template<typename... Args>

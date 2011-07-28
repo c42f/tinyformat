@@ -15,9 +15,11 @@ Design goals:
 * Simplicity and minimalism.  A single header file to include and distribute
   with your own projects.
 * Type safety and extensibility for user defined types.
-* Parse standard C99 format strings, and support most features.
-* Support as many commonly used ``printf()`` features as practical without
+* Parse standard C99 format strings
+* Support as many commonly used C99 ``printf()`` features as practical without
   compromising on simplicity.
+* Use variadic templates with C++0x but provide good C++98 support for backward
+  compatibility
 
 
 Example usage
@@ -57,7 +59,7 @@ disabled if desired.
 Three main interface functions are available: an iostreams-based ``format()``,
 a string-based ``format()`` and a ``printf()`` replacement.  All these
 functions can take an unlimited number of input arguments if compiled with
-C++0x varadic templates support.  For C++98 compatibility, an in-source python
+C++0x variadic templates support.  For C++98 compatibility, an in-source python
 code generator (using the excellent ``cog.py``; see
 http://nedbatchelder.com/code/cog/ ) has been used to generate multiple
 versions of the functions with up to 10 values of user-defined type.  This
@@ -214,7 +216,7 @@ Author and acknowledgments
 Tinyformat was written by Chris Foster [chris42f (at) gmail (d0t) com].  The
 implementation owes much to ``boost::format`` for showing that it's fairly
 easy to use stream based formatting to simulate most of the ``printf()``
-syntax.  Douglas Gregor's introduction to varadic templates
+syntax.  Douglas Gregor's introduction to variadic templates
 -- see http://www.generic-programming.org/~dgregor/cpp/variadic-templates.html --
 was also helpful, especially since it solves exactly the ``printf()`` problem
 for the case of trivial format strings.
