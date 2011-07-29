@@ -183,19 +183,19 @@ Tinyformat tries to solve these problems while providing formatting which is
 sufficiently general for most incidental day to day uses.  If you need a very
 general or very performant library, tinyformat is probably not for you.
 
-The script ``bloat_test.sh`` tests whether tinyformat succeeds in avoiding
-compile time and code bloat for nontrivial projects.  The idea is to include
-``tinyformat.h`` into 100 translation units and use ``printf()`` five times in
-each to simulate a medium sized project.  The resulting executable size and
-compile time (g++-4.4.3, linux ubuntu 10.04, best of three) is shown in the
-following tables.
+The script ``bloat_test.sh`` included in the repository tests whether
+tinyformat succeeds in avoiding compile time and code bloat for nontrivial
+projects.  The idea is to include ``tinyformat.h`` into 100 translation units
+and use ``printf()`` five times in each to simulate a medium sized project.
+The resulting executable size and compile time (g++-4.4.3, linux ubuntu 10.04,
+best of three) is shown in the following tables.
 
 **Non-optimized build**
 
 ====================== ================== ==========================
 test name              total compile time executable size (stripped)
 ====================== ================== ==========================
-printf                 1.2s               44K  (36K)
+libc printf            1.2s               44K  (36K)
 std::ostream           8.5s               84K  (64K)
 tinyformat             12.9s              172K (140K)
 tinyformat, c++0x mode 14.8s              172K (140K)
@@ -208,7 +208,7 @@ boost::format          51.6s              772K (676K)
 ====================== ================== ==========================
 test name              total compile time executable size (stripped)
 ====================== ================== ==========================
-printf                 1.6s               44K  (32K)
+libc printf            1.6s               44K  (32K)
 std::ostream           9.5s               80K  (60K)
 tinyformat             33.6s              340K (308K)
 tinyformat, c++0x mode 36.2s              340K (308K)
