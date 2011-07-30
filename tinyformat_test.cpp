@@ -89,7 +89,8 @@ int main()
     runTest("%#x", 0x271828);
     runTest("%#o", 0x271828);
     runTest("%#f", 3.0);
-    // runTest("%010d", -10); // BUG: sign not extended with zero fill
+    runTest("%010d", -10);
+    runTest("%#010X", 0xBEEF);
 
     // Length modifiers
     runTest("%lld", (long long)100000);

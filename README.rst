@@ -249,11 +249,7 @@ for the case of trivial format strings.
 Bugs
 ----
 
-Here's some known bugs which are probably cumbersome to fix - possibly
-cumbersome enough to compromise the goal of minimalism.  They're likely to
-remain until someone actually needs the corresponding feature.
+Here's a list of known bugs which are probably cumbersome to fix:
 
-* Negative signs are not extended correctly when padding integer fields with
-  zeros.
 * Field padding is unlikely to work correctly with complicated user defined
   types.

@@ -196,7 +196,12 @@ inline int streamStateFromFormat(std::ostream& out, const char* fmtStart,
                 continue;
             case '0':
                 if(!leftJustify)
+                {
+                    // Use internal padding so that numeric values are
+                    // formatted correctly, eg -00010 rather than 000-10
                     out.fill('0');
+                    out.setf(std::ios::internal, std::ios::adjustfield);
+                }
                 continue;
             case '-':
                 leftJustify = true;
