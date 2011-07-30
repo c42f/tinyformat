@@ -45,21 +45,9 @@ struct TestWrap
 };
 
 
-void testWrap()
-{
-    TestWrap wrap;
-    assert(wrap.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
-           "10: someformat asdf:2:4");
-}
-
-
 int main()
 {
-    // General "complicated" format spec test
-    runTest("%0.10f:%04d:%+g:%s:%p:%c:%%:%%asdf",
-            1.234, 42, 3.13, "str", (void*)1000, (int)'X');
-
-    // Test various format specs against results of sprintf
+    // Test various basic format specs against results of sprintf
     runTest("%s", "asdf");
     runTest("%d", 1234);
     runTest("%i", -5678);
@@ -78,23 +66,38 @@ int main()
     runTest("%p", (void*)123456789);
     runTest("%%%s", "asdf"); // note: plain "%%" format gives warning with gcc
 
-    // Test some flags + width, precision stuff.
-    runTest("%.2s", "asdf");
-    runTest("%.s", "asdf");
-    runTest("%.f", 10.1);
-    runTest("% 10d", -10);
-    runTest("%- 10d", -10);
-    runTest("%-010d", 10);
+    // Test precision & width
+    runTest("%10d", -10);
     runTest("%10.4f", 1234.1234567890);
+    runTest("%.f", 10.1);
+    runTest("%.2s", "asdf"); // strings truncate to precision
+    // runTest("%.4d", 10); printf incompatiblity
+
+    // Test flags
     runTest("%#x", 0x271828);
     runTest("%#o", 0x271828);
     runTest("%#f", 3.0);
-    runTest("%010d", -10);
+    runTest("%010d", 100);
+    runTest("%010d", -10); // sign should extend
     runTest("%#010X", 0xBEEF);
+    // flag override precedence
+    runTest("%+ 10d", 10); // '+' overrides ' '
+    runTest("% +10d", 10);
+    runTest("%-010d", 10); // '-' overrides '0'
+    runTest("%0-10d", 10);
 
-    // Length modifiers
+    // Check that length modifiers are ignored
+    // runTest("%hhd", (char)60); printf incompatibility
+    runTest("%hd", (short)1000);
+    runTest("%ld", (long)100000);
     runTest("%lld", (long long)100000);
+    runTest("%jd", (intmax_t)100000);
     runTest("%zd", (size_t)100000);
+    runTest("%td", (ptrdiff_t)100000);
+
+    // General "complicated" format spec test
+    runTest("%0.10f:%04d:%+g:%s:%p:%c:%%:%%asdf",
+            1.234, 42, 3.13, "str", (void*)1000, (int)'X');
 
     // Test wrong number of args
     EXPECT_ERROR(
@@ -117,7 +120,10 @@ int main()
     tfm::format(oss, "%f", 10.1234123412341234);
     assert(oss.str() == "10.123412");
 
-    testWrap();
+    // Test that interface wrapping works correctly
+    TestWrap wrap;
+    assert(wrap.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
+           "10: someformat asdf:2:4");
 
     return 0;
 }

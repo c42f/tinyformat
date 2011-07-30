@@ -161,17 +161,25 @@ inline int parseIntAndAdvance(const char*& c)
 }
 
 
+// Flags for features not representable with standard stream state
+enum ExtraFormatFlags
+{
+    Flag_TruncateToPrecision = 1<<0, // truncate length to stream precision()
+    Flag_SpacePadPositive    = 1<<1, // pad positive values with spaces
+};
+
+
 // Parse the format string and set the stream state accordingly.
 //
 // The format mini-language recognized here is meant to be the one from C99,
 // with the form "%[flags][width][.precision][length]type".
 //
-// Some format specs (notably ones of the form "%.Ns" for some decimal number
-// N) request that the output be truncated to the given precision.  Truncation
-// is signalled by returning the truncation length.  If no truncation is to be
-// performed, -1 is returned.
-inline int streamStateFromFormat(std::ostream& out, const char* fmtStart,
-                                 const char* fmtEnd)
+// The return value is a bitwise combination of values from the
+// ExtraFormatFlags enum, containing formatting options which can't be natively
+// represented using the ostream state.
+inline unsigned int streamStateFromFormat(std::ostream& out,
+                                          const char* fmtStart,
+                                          const char* fmtEnd)
 {
     // Reset stream state to defaults.
     out.width(0);
@@ -182,11 +190,10 @@ inline int streamStateFromFormat(std::ostream& out, const char* fmtStart,
     out.unsetf(std::ios::adjustfield | std::ios::basefield |
                std::ios::floatfield | std::ios::showbase |
                std::ios::showpoint | std::ios::showpos | std::ios::uppercase);
-    int truncateLength = -1;
+    unsigned int extraFlags = 0;
     bool precisionSet = false;
     const char* c = fmtStart;
     // 1) Parse flags
-    bool leftJustify = false;
     for(;; ++c)
     {
         switch(*c)
@@ -195,7 +202,8 @@ inline int streamStateFromFormat(std::ostream& out, const char* fmtStart,
                 out.setf(std::ios::showpoint | std::ios::showbase);
                 continue;
             case '0':
-                if(!leftJustify)
+                // overridden by left alignment ('-' flag)
+                if(!(out.flags() & std::ios::left))
                 {
                     // Use internal padding so that numeric values are
                     // formatted correctly, eg -00010 rather than 000-10
@@ -204,15 +212,17 @@ inline int streamStateFromFormat(std::ostream& out, const char* fmtStart,
                 }
                 continue;
             case '-':
-                leftJustify = true;
                 out.fill(' ');
                 out.setf(std::ios::left, std::ios::adjustfield);
                 continue;
             case ' ':
-                out.fill(' ');
+                // overridden by show positive sign, '+' flag.
+                if(!(out.flags() & std::ios::showpos))
+                    extraFlags |= Flag_SpacePadPositive;
                 continue;
             case '+':
                 out.setf(std::ios::showpos);
+                extraFlags &= ~Flag_SpacePadPositive;
                 continue;
         }
         break;
@@ -284,7 +294,7 @@ inline int streamStateFromFormat(std::ostream& out, const char* fmtStart,
             break;
         case 's':
             if(precisionSet)
-                truncateLength = out.precision();
+                extraFlags |= Flag_TruncateToPrecision;
             break;
         case 'n':
             // Not supported - will cause problems!
@@ -294,7 +304,7 @@ inline int streamStateFromFormat(std::ostream& out, const char* fmtStart,
     // we shouldn't be past the end, though we may equal it if the input
     // format was broken and ended with '\0'.
     assert(c <= fmtEnd);
-    return truncateLength;
+    return extraFlags;
 }
 
 
@@ -400,20 +410,31 @@ void formatValueBasic(std::ostream& out, const char* fmtBegin,
     std::ios::fmtflags flags = out.flags();
     char fill = out.fill();
     // Set stream state.
-    int truncateLength = detail::streamStateFromFormat(out, fmtBegin, fmtEnd);
+    unsigned extraFlags = detail::streamStateFromFormat(out, fmtBegin, fmtEnd);
     // Format the value into the stream.
-    if(truncateLength < 0)
+    if(!extraFlags)
         formatValue(out, fmtBegin, fmtEnd, value);
     else
     {
-        // Special case: the format spec told us to truncate the formatted
-        // result.  For generality, do this with a temporary stream.
-        std::ostringstream oss;
-        oss.copyfmt(out);
-        formatValue(oss, fmtBegin, fmtEnd, value);
-        std::string result = oss.str();
-        if((int)result.size() > truncateLength)
-            out.write(result.c_str(), truncateLength);
+        // The following are special cases where there's no direct
+        // correspondence between stream formatting and the printf() behaviour.
+        // Instead, we simulate the behaviour crudely by formatting into a
+        // temporary string stream and munging the resulting string.
+        std::ostringstream tmpStream;
+        tmpStream.copyfmt(out);
+        if(extraFlags & detail::Flag_SpacePadPositive)
+            tmpStream.setf(std::ios::showpos);
+        formatValue(tmpStream, fmtBegin, fmtEnd, value);
+        std::string result = tmpStream.str();
+        if(extraFlags & detail::Flag_SpacePadPositive)
+        {
+            for(size_t i = 0, iend = result.size(); i < iend; ++i)
+                if(result[i] == '+')
+                    result[i] = ' ';
+        }
+        if((extraFlags & detail::Flag_TruncateToPrecision) &&
+           (int)result.size() > (int)out.precision())
+            out.write(result.c_str(), out.precision());
         else
             out << result;
     }
