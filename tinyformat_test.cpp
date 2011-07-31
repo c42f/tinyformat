@@ -74,6 +74,7 @@ int main()
 
     // Test precision & width
     runTest("%10d", -10);
+    runTest("%.4d", 10);
     runTest("%10.4f", 1234.1234567890);
     runTest("%.f", 10.1);
     runTest("%.2s", "asdf"); // strings truncate to precision
@@ -100,7 +101,8 @@ int main()
     runTest("%td", (ptrdiff_t)100000);
 
     // printf incompatibilities:
-    // runTest("%.4d", 10); precision for ints not supported.
+    // runTest("%6.4x", 10); // precision & width can't be supported independently
+    // runTest("%.4d", -10); // negative numbers + precision don't quite work.
 
     // General "complicated" format spec test
     runTest("%0.10f:%04d:%+g:%s:%p:%c:%%:%%asdf",

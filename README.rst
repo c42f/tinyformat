@@ -64,7 +64,7 @@ code generator (using the excellent ``cog.py``; see
 http://nedbatchelder.com/code/cog/ ) has been used to generate multiple
 versions of the functions with up to 10 values of user-defined type.  This
 maximum can be customized by setting the ``maxParams`` parameter in the code
-generator and regenerating the code using ``cog.py``.
+generator and regenerating the code using the command ``cog.py -r tinyformat.h``.
 
 
 The ``format()`` function which takes a stream as the first argument is the
@@ -161,6 +161,35 @@ a normal macro parameter to ``TINYFORMAT_WRAP_FORMAT`` (the commas would look
 like more than one macro argument to the preprocessor).
 
 
+Incompatibilites with C99 printf
+--------------------------------
+
+Not all features of printf can be simulated simply using standard iostreams.
+Here's a list of known incompatibilities:
+
+* The C99 ``"%a"`` and ``"%A"`` hexadecimal floating point conversions are not
+  supported since the iostreams don't have the necessary flags.  These add no
+  extra flags to the stream state but do trigger a conversion.
+* The precision for integer conversions cannot be supported by the iostreams
+  state independently of the field width.  In tinyformat the field width takes
+  precedence, so the 4 in ``%6.4d`` will be ignored.  However, if the field
+  width is not specified, the width used internally is set equal to the
+  precision and zero padding is added.  That is, a conversion like ``%.4d``
+  effectively becomes ``%04d`` internally.  This isn't correct for every case
+  (eg, negative numbers end up with one less digit than desired) but it's
+  about the closest simple solution within the iostream model.
+* The ``*`` and ``*m$`` variable width/precision fields are not supported.
+  These require nonlocal information from the format string and arguments
+  which would make the implementation a lot more complicated.
+* The ``"%n"`` query specifier isn't supported to keep things simple, though
+  it may be possible to implement.
+* Wide characters with the ``%ls`` conversion are not supported.
+* Strings truncated with ``%.ms`` for some integer ``m`` must be
+  null-terminated but need not be in printf as long as the string is longer
+  than length ``m``.  This needs to be fixed, since it could cause previously
+  working printf-based programs to crash.
+
+
 Rationale
 ---------
 
@@ -251,5 +280,10 @@ Bugs
 
 Here's a list of known bugs which are probably cumbersome to fix:
 
-* Field padding is unlikely to work correctly with complicated user defined
-  types.
+* Field padding won't work correctly with complicated user defined types.  For
+  general types, the only way to do this correctly seems to be format to a
+  temporary string stream, check the length, and finally send to the output
+  stream with padding if necessary.  Doing this for all types would be
+  quite inelegant because it implies extra allocations to make the temporary
+  stream.  A workaround is to add logic to operator<<() for composite user
+  defined types so they are aware of the stream field width.

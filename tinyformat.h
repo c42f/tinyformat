@@ -192,6 +192,7 @@ inline unsigned int streamStateFromFormat(std::ostream& out,
                std::ios::showpoint | std::ios::showpos | std::ios::uppercase);
     unsigned int extraFlags = 0;
     bool precisionSet = false;
+    bool widthSet = false;
     const char* c = fmtStart;
     // 1) Parse flags
     for(;; ++c)
@@ -229,7 +230,10 @@ inline unsigned int streamStateFromFormat(std::ostream& out,
     }
     // 2) Parse width
     if(*c >= '0' && *c <= '9')
+    {
+        widthSet = true;
         out.width(parseIntAndAdvance(c));
+    }
     if(*c == '*')
         TINYFORMAT_ERROR("tinyformat: variable field widths not supported");
     // 3) Parse precision
@@ -237,7 +241,7 @@ inline unsigned int streamStateFromFormat(std::ostream& out,
     {
         ++c;
         if(*c == '*')
-            TINYFORMAT_ERROR("tinyformat: variable field widths not supported");
+            TINYFORMAT_ERROR("tinyformat: variable precision not supported");
         int precision = 0;
         if(*c >= '0' && *c <= '9')
             precision = parseIntAndAdvance(c);
@@ -256,18 +260,22 @@ inline unsigned int streamStateFromFormat(std::ostream& out,
         type = *c;
     // Set stream flags based on conversion specifier (thanks to the
     // boost::format class for forging the way here).
+    bool intConversion = false;
     switch(type)
     {
         case 'u': case 'd': case 'i':
             out.setf(std::ios::dec, std::ios::basefield);
+            intConversion = true;
             break;
         case 'o':
             out.setf(std::ios::oct, std::ios::basefield);
+            intConversion = true;
             break;
         case 'X':
             out.setf(std::ios::uppercase);
         case 'x': case 'p':
             out.setf(std::ios::hex, std::ios::basefield);
+            intConversion = true;
             break;
         case 'E':
             out.setf(std::ios::uppercase);
@@ -300,6 +308,16 @@ inline unsigned int streamStateFromFormat(std::ostream& out,
             // Not supported - will cause problems!
             TINYFORMAT_ERROR("tinyformat: %n conversion spec not supported");
             break;
+    }
+    if(intConversion && precisionSet && !widthSet)
+    {
+        // "precision" for integers gives the minimum number of digits (to be
+        // padded with zeros on the left).  This isn't really supported by the
+        // iostreams, but we can approximately simulate it with the width if
+        // the width isn't otherwise used.
+        out.width(out.precision());
+        out.setf(std::ios::internal, std::ios::adjustfield);
+        out.fill('0');
     }
     // we shouldn't be past the end, though we may equal it if the input
     // format was broken and ended with '\0'.
