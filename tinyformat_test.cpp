@@ -9,9 +9,10 @@
 #include "tinyformat.h"
 #include <cassert>
 
+#if 0
 // Compare result of tfm::format() to C's sprintf().
 template<typename... Args>
-void runTest(const Args&... args)
+void compareSprintf(const Args&... args)
 {
     std::string tfmResult = tfm::format(args...);
     char sprintfResult[200];
@@ -23,11 +24,20 @@ void runTest(const Args&... args)
         assert(0 && "results didn't match, see above.");
     }
 }
+#endif
 
 #define EXPECT_ERROR(expression)                            \
 {                                                           \
     try { expression; assert(0 && "expected exception"); }  \
     catch(std::runtime_error&) {}                           \
+}
+
+#define CHECK_EQUAL(a, b)                           \
+if(!((a) == (b)))                                   \
+{                                                   \
+    std::cout << (a) << " != " << (b) << "\n";    \
+    std::cout << "[" #a ", " #b "]\n";    \
+    assert(0 && "results don't match, see above");  \
 }
 
 
@@ -48,67 +58,67 @@ struct TestWrap
 int main()
 {
     // Test various basic format specs against results of sprintf
-    runTest("%s", "asdf");
-    runTest("%d", 1234);
-    runTest("%i", -5678);
-    runTest("%o", 012);
-    runTest("%u", (unsigned int)-1);
-    runTest("%x", 0xdeadbeef);
-    runTest("%X", 0xDEADBEEF);
-    runTest("%e", 1.23456e10);
-    runTest("%E", -1.23456E10);
-    runTest("%f", -9.8765);
-    runTest("%F", 9.8765);
-    runTest("%g", DBL_MAX);
-    runTest("%G", DBL_MAX);
-    runTest("%c", 65);
-    runTest("%hc", (short)65);
-    runTest("%lc", (long)65);
-    runTest("%s", "asdf_123098");
-    runTest("%p", (void*)123456789);
-    runTest("%%%s", "asdf"); // note: plain "%%" format gives warning with gcc
+    CHECK_EQUAL(tfm::format("%s", "asdf"), "asdf");
+    CHECK_EQUAL(tfm::format("%d", 1234), "1234");
+    CHECK_EQUAL(tfm::format("%i", -5678), "-5678");
+    CHECK_EQUAL(tfm::format("%o", 012), "12");
+    CHECK_EQUAL(tfm::format("%u", 123456u), "123456");
+    CHECK_EQUAL(tfm::format("%x", 0xdeadbeef), "deadbeef");
+    CHECK_EQUAL(tfm::format("%X", 0xDEADBEEF), "DEADBEEF");
+    CHECK_EQUAL(tfm::format("%e", 1.23456e10), "1.234560e+10");
+    CHECK_EQUAL(tfm::format("%E", -1.23456E10), "-1.234560E+10");
+    CHECK_EQUAL(tfm::format("%f", -9.8765), "-9.876500");
+    CHECK_EQUAL(tfm::format("%F", 9.8765), "9.876500");
+    CHECK_EQUAL(tfm::format("%g", 10), "10");
+    CHECK_EQUAL(tfm::format("%G", 100), "100");
+    CHECK_EQUAL(tfm::format("%c", 65), "A");
+    CHECK_EQUAL(tfm::format("%hc", (short)65), "A");
+    CHECK_EQUAL(tfm::format("%lc", (long)65), "A");
+    CHECK_EQUAL(tfm::format("%s", "asdf_123098"), "asdf_123098");
+    CHECK_EQUAL(tfm::format("%p", (void*)0x12345), "0x12345");
+    CHECK_EQUAL(tfm::format("%%%s", "asdf"), "%asdf"); // note: plain "%%" format gives warning with gcc
     // chars with int format specs are printed as ints:
-    runTest("%hhd", (char)65);
-    runTest("%hhu", (unsigned char)65);
-    runTest("%hhd", (signed char)65);
-    runTest("%p", "asdf"); // should print address of "asdf", not the string.
+    CHECK_EQUAL(tfm::format("%hhd", (char)65), "65");
+    CHECK_EQUAL(tfm::format("%hhu", (unsigned char)65), "65");
+    CHECK_EQUAL(tfm::format("%hhd", (signed char)65), "65");
+    CHECK_EQUAL(tfm::format("%p", (const char*)0x10), "0x10"); // should print address, not string.
 
     // Test precision & width
-    runTest("%10d", -10);
-    runTest("%.4d", 10);
-    runTest("%10.4f", 1234.1234567890);
-    runTest("%.f", 10.1);
-    runTest("%.2s", "asdf"); // strings truncate to precision
+    CHECK_EQUAL(tfm::format("%10d", -10), "       -10");
+    CHECK_EQUAL(tfm::format("%.4d", 10), "0010");
+    CHECK_EQUAL(tfm::format("%10.4f", 1234.1234567890), " 1234.1235");
+    CHECK_EQUAL(tfm::format("%.f", 10.1), "10");
+    CHECK_EQUAL(tfm::format("%.2s", "asdf"), "as"); // strings truncate to precision
 
     // Test flags
-    runTest("%#x", 0x271828);
-    runTest("%#o", 0x271828);
-    runTest("%#f", 3.0);
-    runTest("%010d", 100);
-    runTest("%010d", -10); // sign should extend
-    runTest("%#010X", 0xBEEF);
+    CHECK_EQUAL(tfm::format("%#x", 0x271828), "0x271828");
+    CHECK_EQUAL(tfm::format("%#o", 0x271828), "011614050");
+    CHECK_EQUAL(tfm::format("%#f", 3.0), "3.000000");
+    CHECK_EQUAL(tfm::format("%010d", 100), "0000000100");
+    CHECK_EQUAL(tfm::format("%010d", -10), "-000000010"); // sign should extend
+    CHECK_EQUAL(tfm::format("%#010X", 0xBEEF), "0X0000BEEF");
     // flag override precedence
-    runTest("%+ 10d", 10); // '+' overrides ' '
-    runTest("% +10d", 10);
-    runTest("%-010d", 10); // '-' overrides '0'
-    runTest("%0-10d", 10);
+    CHECK_EQUAL(tfm::format("%+ 10d", 10), "       +10"); // '+' overrides ' '
+    CHECK_EQUAL(tfm::format("% +10d", 10), "       +10");
+    CHECK_EQUAL(tfm::format("%-010d", 10), "10        "); // '-' overrides '0'
+    CHECK_EQUAL(tfm::format("%0-10d", 10), "10        ");
 
     // Check that length modifiers are ignored
-    runTest("%hd", (short)1000);
-    runTest("%ld", (long)100000);
-    runTest("%lld", (long long)100000);
-    runTest("%jd", (intmax_t)100000);
-    runTest("%zd", (size_t)100000);
-    runTest("%td", (ptrdiff_t)100000);
+    CHECK_EQUAL(tfm::format("%hd", (short)1000), "1000");
+    CHECK_EQUAL(tfm::format("%ld", (long)100000), "100000");
+    CHECK_EQUAL(tfm::format("%lld", (long long)100000), "100000");
+    CHECK_EQUAL(tfm::format("%zd", (size_t)100000), "100000");
+    CHECK_EQUAL(tfm::format("%td", (ptrdiff_t)100000), "100000");
+    CHECK_EQUAL(tfm::format("%jd", 100000), "100000");
 
     // printf incompatibilities:
-    // runTest("%6.4x", 10); // precision & width can't be supported independently
-    // runTest("%.4d", -10); // negative numbers + precision don't quite work.
+    // compareSprintf("%6.4x", 10); // precision & width can't be supported independently
+    // compareSprintf("%.4d", -10); // negative numbers + precision don't quite work.
 
     // General "complicated" format spec test
-    runTest("%0.10f:%04d:%+g:%s:%p:%c:%%:%%asdf",
-            1.234, 42, 3.13, "str", (void*)1000, (int)'X');
-
+    CHECK_EQUAL(tfm::format("%0.10f:%04d:%+g:%s:%p:%c:%%:%%asdf",
+                       1.234, 42, 3.13, "str", (void*)1000, (int)'X'),
+                "1.2340000000:0042:+3.13:str:0x3e8:X:%:%asdf");
     // Test wrong number of args
     EXPECT_ERROR(
         tfm::format("%d", 5, 10)
