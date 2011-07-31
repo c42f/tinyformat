@@ -71,6 +71,7 @@ int main()
     runTest("%hhd", (char)65);
     runTest("%hhu", (unsigned char)65);
     runTest("%hhd", (signed char)65);
+    runTest("%p", "asdf"); // should print address of "asdf", not the string.
 
     // Test precision & width
     runTest("%10d", -10);

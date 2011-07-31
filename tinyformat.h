@@ -411,6 +411,31 @@ struct formatValueAsChar<T,true>
         { out << static_cast<char>(value); }
 };
 
+
+// Format at most truncLen characters of a C string to the given stream.
+// Return true if formatting proceeded (generic version always returns false)
+template<typename T>
+inline bool formatCStringTruncate(std::ostream& out, const T& value,
+                                  size_t truncLen)
+{
+    return false;
+}
+#define TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE(type)             \
+inline bool formatCStringTruncate(std::ostream& out, type* value,    \
+                                  size_t truncLen)                   \
+{                                                                    \
+    size_t len = 0;                                                  \
+    while(len < truncLen && value[len] != 0)                         \
+        ++len;                                                       \
+    out.write(value, len);                                           \
+    return true;                                                     \
+}
+// Overload for const char* and char*.  Could overload for signed & unsigned
+// char too, but these are technically unneeded for printf compatibility.
+TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE(const char)
+TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE(char)
+#undef TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE
+
 } // namespace detail
 
 
@@ -441,6 +466,28 @@ inline void formatValue(std::ostream& out, const char* fmtBegin,
 }
 
 
+// Overloaded versions for character pointer types to correctly support "%p"
+// conversion.  Without this, tfm::printf("%p", (const char*)0) would crash.
+#define TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(charType)         \
+inline void formatValue(std::ostream& out, charType* fmtBegin,        \
+                        const char* fmtEnd, const char* value)        \
+{                                                                     \
+    if(*(fmtEnd-1) == 'p')                                            \
+        out << static_cast<const void*>(value);                       \
+    else                                                              \
+        out << value;                                                 \
+}
+// Ugh, what a mess.  We need to define an overload for each of the character
+// pointer types specifically so that they all get correctly picked up.
+TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(char)
+TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(const char)
+TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(signed char)
+TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(const signed char)
+TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(unsigned char)
+TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(const unsigned char)
+#undef TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR
+
+
 // Overloaded version for char types to support printing as an integer
 #define TINYFORMAT_DEFINE_FORMATVALUE_CHAR(charType)                  \
 inline void formatValue(std::ostream& out, const char* fmtBegin,      \
@@ -458,6 +505,7 @@ inline void formatValue(std::ostream& out, const char* fmtBegin,      \
 TINYFORMAT_DEFINE_FORMATVALUE_CHAR(char)
 TINYFORMAT_DEFINE_FORMATVALUE_CHAR(signed char)
 TINYFORMAT_DEFINE_FORMATVALUE_CHAR(unsigned char)
+#undef TINYFORMAT_DEFINE_FORMATVALUE_CHAR
 
 
 // Format a value into a stream, called for all types by format()
@@ -494,8 +542,16 @@ void formatValueBasic(std::ostream& out, const char* fmtBegin,
         tmpStream.copyfmt(out);
         if(extraFlags & detail::Flag_SpacePadPositive)
             tmpStream.setf(std::ios::showpos);
-        formatValue(tmpStream, fmtBegin, fmtEnd, value);
-        std::string result = tmpStream.str();
+        // formatCStringTruncate is required for truncating conversions like
+        // "%.4s" where at most 4 characters of the c-string should be read.
+        // If we didn't include this special case, we might read off the end.
+        if(!( (extraFlags & detail::Flag_TruncateToPrecision) &&
+             detail::formatCStringTruncate(tmpStream, value, out.precision()) ))
+        {
+            // Not a truncated c-string; just format normally.
+            formatValue(tmpStream, fmtBegin, fmtEnd, value);
+        }
+        std::string result = tmpStream.str(); // allocates... yuck.
         if(extraFlags & detail::Flag_SpacePadPositive)
         {
             for(size_t i = 0, iend = result.size(); i < iend; ++i)

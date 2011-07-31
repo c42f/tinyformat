@@ -184,10 +184,6 @@ Here's a list of known incompatibilities:
 * The ``"%n"`` query specifier isn't supported to keep things simple, though
   it may be possible to implement.
 * Wide characters with the ``%ls`` conversion are not supported.
-* Strings truncated with ``%.ms`` for some integer ``m`` must be
-  null-terminated but need not be in printf as long as the string is longer
-  than length ``m``.  This needs to be fixed, since it could cause previously
-  working printf-based programs to crash.
 
 
 Rationale
