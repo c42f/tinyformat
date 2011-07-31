@@ -62,16 +62,21 @@ int main()
     runTest("%g", DBL_MAX);
     runTest("%G", DBL_MAX);
     runTest("%c", 65);
+    runTest("%hc", (short)65);
+    runTest("%lc", (long)65);
     runTest("%s", "asdf_123098");
     runTest("%p", (void*)123456789);
     runTest("%%%s", "asdf"); // note: plain "%%" format gives warning with gcc
+    // chars with int format specs are printed as ints:
+    runTest("%hhd", (char)65);
+    runTest("%hhu", (unsigned char)65);
+    runTest("%hhd", (signed char)65);
 
     // Test precision & width
     runTest("%10d", -10);
     runTest("%10.4f", 1234.1234567890);
     runTest("%.f", 10.1);
     runTest("%.2s", "asdf"); // strings truncate to precision
-    // runTest("%.4d", 10); printf incompatiblity
 
     // Test flags
     runTest("%#x", 0x271828);
@@ -87,13 +92,15 @@ int main()
     runTest("%0-10d", 10);
 
     // Check that length modifiers are ignored
-    // runTest("%hhd", (char)60); printf incompatibility
     runTest("%hd", (short)1000);
     runTest("%ld", (long)100000);
     runTest("%lld", (long long)100000);
     runTest("%jd", (intmax_t)100000);
     runTest("%zd", (size_t)100000);
     runTest("%td", (ptrdiff_t)100000);
+
+    // printf incompatibilities:
+    // runTest("%.4d", 10); precision for ints not supported.
 
     // General "complicated" format spec test
     runTest("%0.10f:%04d:%+g:%s:%p:%c:%%:%%asdf",

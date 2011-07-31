@@ -355,6 +355,44 @@ inline const char* findFormatSpecEnd(const char* fmt)
     return c;
 }
 
+
+// Test whether type T1 is convertible to type T2
+template <typename T1, typename T2>
+struct is_convertible
+{
+    private:
+        // two types of different size
+        struct fail { char dummy[2]; };
+        struct succeed { char dummy; };
+        // Try to convert a T1 to a T2 by plugging into tryConvert
+        static fail tryConvert(...);
+        static succeed tryConvert(const T2&);
+        typedef T1* T1ptr;
+    public:
+        // Standard trick: the (...) version of tryConvert will be chosen from
+        // the overload set only if the version taking a T2 doesn't match.
+        // Then we compare the sizes of the return types to check which
+        // function matched.  Very neat, in a disgusting kind of way :)
+        static const bool value =
+            sizeof(tryConvert(*(T1ptr()))) == sizeof(succeed);
+};
+
+
+// Format the value by casting to a char.  This default implementation should
+// never be called (see below).
+template<typename T, bool convertible>
+struct formatValueAsChar
+{
+    static void invoke(std::ostream& out, const T& value) { }
+};
+// Specialized version for types that can actually be converted to char.
+template<typename T>
+struct formatValueAsChar<T,true>
+{
+    static void invoke(std::ostream& out, const T& value)
+        { out << static_cast<char>(value); }
+};
+
 } // namespace detail
 
 
@@ -375,19 +413,33 @@ template<typename T>
 inline void formatValue(std::ostream& out, const char* fmtBegin,
                         const char* fmtEnd, const T& value)
 {
-    out << value;
-}
-
-
-// Overridden to support '%c' conversion.
-inline void formatValue(std::ostream& out, const char* fmtBegin,
-                        const char* fmtEnd, int value)
-{
-    if(*(fmtEnd-1) == 'c')
-        out << (char)value;
+    // The mess here is to support the %c conversion: Convert value into
+    // a char and print it as one if possible, otherwise print as usual.
+    const bool canConvertToChar = detail::is_convertible<T,char>::value;
+    if(canConvertToChar && *(fmtEnd-1) == 'c')
+        detail::formatValueAsChar<T, canConvertToChar>::invoke(out, value);
     else
         out << value;
 }
+
+
+// Overloaded version for char types to support printing as an integer
+#define TINYFORMAT_DEFINE_FORMATVALUE_CHAR(charType)                  \
+inline void formatValue(std::ostream& out, const char* fmtBegin,      \
+                        const char* fmtEnd, charType value)           \
+{                                                                     \
+    switch(*(fmtEnd-1))                                               \
+    {                                                                 \
+        case 'u': case 'd': case 'i': case 'o': case 'X': case 'x':   \
+            out << static_cast<int>(value); break;                    \
+        default:                                                      \
+            out << value;                   break;                    \
+    }                                                                 \
+}
+// per 3.9.1: char, signed char and unsigned char are all distinct types
+TINYFORMAT_DEFINE_FORMATVALUE_CHAR(char)
+TINYFORMAT_DEFINE_FORMATVALUE_CHAR(signed char)
+TINYFORMAT_DEFINE_FORMATVALUE_CHAR(unsigned char)
 
 
 // Format a value into a stream, called for all types by format()
