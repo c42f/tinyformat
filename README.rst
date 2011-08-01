@@ -6,9 +6,9 @@ A minimal type safe printf-replacement library for C++
 ------------------------------------------------------
 
 This library aims to support 95% of casual C++ string formatting needs with a
-single lightweight header file.  Anything you can do with this library can
-also be done with the standard C++ streams, but probably with considerably
-more typing :)
+single reasonably lightweight header file.  Anything you can do with this
+library can also be done with the standard C++ streams, but probably with
+considerably more typing :-)
 
 Design goals:
 
@@ -57,14 +57,16 @@ namespace alias ``tfm`` is provided to encourage brevity, but can easily be
 disabled if desired.
 
 Three main interface functions are available: an iostreams-based ``format()``,
-a string-based ``format()`` and a ``printf()`` replacement.  All these
-functions can take an unlimited number of input arguments if compiled with
-C++0x variadic templates support.  For C++98 compatibility, an in-source python
-code generator (using the excellent ``cog.py``; see
-http://nedbatchelder.com/code/cog/ ) has been used to generate multiple
-versions of the functions with up to 10 values of user-defined type.  This
-maximum can be customized by setting the ``maxParams`` parameter in the code
-generator and regenerating the code using the command ``cog.py -r tinyformat.h``.
+a string-based ``format()`` and a ``printf()`` replacement.  These functions
+can be thought of as C++ replacements for C's ``fprintf()``, ``sprintf()`` and
+``printf()`` functions respectively.  All the interface functions can take an
+unlimited number of input arguments if compiled with C++0x variadic templates
+support.  For C++98 compatibility, an in-source python code generator (using
+the excellent ``cog.py``; see http://nedbatchelder.com/code/cog/ ) has been
+used to generate multiple versions of the functions with up to 10 values of
+user-defined type.  This maximum can be customized by setting the ``maxParams``
+parameter in the code generator and regenerating the code using the command
+``cog.py -r tinyformat.h``.
 
 
 The ``format()`` function which takes a stream as the first argument is the
@@ -161,8 +163,8 @@ a normal macro parameter to ``TINYFORMAT_WRAP_FORMAT`` (the commas would look
 like more than one macro argument to the preprocessor).
 
 
-Incompatibilites with C99 printf
---------------------------------
+Incompatibilities with C99 printf
+---------------------------------
 
 Not all features of printf can be simulated simply using standard iostreams.
 Here's a list of known incompatibilities:
@@ -174,10 +176,10 @@ Here's a list of known incompatibilities:
   state independently of the field width.  In tinyformat the field width takes
   precedence, so the 4 in ``%6.4d`` will be ignored.  However, if the field
   width is not specified, the width used internally is set equal to the
-  precision and zero padding is added.  That is, a conversion like ``%.4d``
-  effectively becomes ``%04d`` internally.  This isn't correct for every case
-  (eg, negative numbers end up with one less digit than desired) but it's
-  about the closest simple solution within the iostream model.
+  precision and padded with zeros on the left.  That is, a conversion like
+  ``%.4d`` effectively becomes ``%04d`` internally.  This isn't correct for
+  every case (eg, negative numbers end up with one less digit than desired) but
+  it's about the closest simple solution within the iostream model.
 * The ``*`` and ``*m$`` variable width/precision fields are not supported.
   These require nonlocal information from the format string and arguments
   which would make the implementation a lot more complicated.
@@ -186,27 +188,11 @@ Here's a list of known incompatibilities:
 * Wide characters with the ``%ls`` conversion are not supported.
 
 
-Rationale
----------
+Benchmarks
+----------
 
-Or, why did I reinvent this particularly well studied wheel?
-
-It's true that there are lots of other excellent and complete solutions to the
-formatting problem (``boost::format`` and fastformat come to mind, but there
-are many others).  Unfortunately, these tend to be very heavy dependencies for
-the purposes of the average "casual" formatting usage.  This heaviness
-manifests in two ways:
-
-1. Large build time dependencies with many source files.  This means the
-   alternatives aren't suitable to bundle within other projects.
-2. Slow build times for every file using the formatting headers (this is very
-   noticeable with boost/format.hpp. I'm not sure about the various other
-   alternatives.)
-3. Code bloat due to instantiating a lot of templates
-
-Tinyformat tries to solve these problems while providing formatting which is
-sufficiently general for most incidental day to day uses.  If you need a very
-general or very performant library, tinyformat is probably not for you.
+Compile time and code bloat
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The script ``bloat_test.sh`` included in the repository tests whether
 tinyformat succeeds in avoiding compile time and code bloat for nontrivial
@@ -250,6 +236,63 @@ generated by taking the contents of ``namespace detail`` along with the
 zero-argument version of ``format()`` and putting them into a separate file,
 tinyformat.cpp.
 
+Speed tests
+~~~~~~~~~~~
+
+The following speed tests results were generated by building
+``tinyformat_test.cpp`` with on linux ubuntu 10.04 with
+``g++-4.4.3 -O3 -DSPEED_TEST``, and taking the best of three runs.  In the
+test, the format string ``"%0.10f:%04d:%+g:%s:%p:%c:%%\n"`` is filled 2000000
+times with output sent to ``/dev/null``; for further details see the source and
+Makefile.
+
+============== ========
+test name      run time
+============== ========
+libc printf    1.18s
+std::ostream   1.89s
+tinyformat     2.10s
+boost::format  9.10s
+============== ========
+
+It's likely that tinyformat has an advantage over boost.format because it tries
+reasonably hard to avoid formatting into temporary strings, preferring instead
+to send the results directly to the stream buffer.  Tinyformat cannot
+be faster than the iostreams because it uses them internally, but it comes
+acceptably close.
+
+
+Rationale
+---------
+
+Or, why did I reinvent this particularly well studied wheel?
+
+Nearly every program needs text formatting in some form but in most cases such
+formatting is *incidental* to the main purpose of the program.  In these cases,
+you really want a library which is simple to use but as lightweight as
+possible.
+
+The ultimate in lightweight dependencies are the solutions provided by the C++
+and C libraries.  However, both the C++ iostreams and C's printf() have
+well known usability problems: iostreams are hopelessly verbose for complicated
+formatting and printf() lacks type safety.
+
+On the other hand, there are plenty of excellent and complete libraries which
+solve the formatting problem in great generality (boost.format and fastformat
+come to mind, but there are many others).  Unfortunately these kind of
+libraries tend to be rather heavy dependencies, far too heavy for projects
+which need to do only a little formatting.  Problems include
+
+1. Having many large source files.  This makes a heavy dependency unsuitable to
+   bundle within other projects for convenience.
+2. Slow build times for every file using any sort of formatting (this is very
+   noticeable with boost/format.hpp. I'm not sure about the various other
+   alternatives.)
+3. Code bloat due to instantiating many templates
+
+Tinyformat tries to solve these problems while providing formatting which is
+sufficiently general for incidental day to day uses.
+
 
 License
 -------
@@ -267,7 +310,7 @@ Tinyformat was written by Chris Foster [chris42f (at) gmail (d0t) com].  The
 implementation owes much to ``boost::format`` for showing that it's fairly
 easy to use stream based formatting to simulate most of the ``printf()``
 syntax.  Douglas Gregor's introduction to variadic templates
--- see http://www.generic-programming.org/~dgregor/cpp/variadic-templates.html --
+--- see http://www.generic-programming.org/~dgregor/cpp/variadic-templates.html ---
 was also helpful, especially since it solves exactly the ``printf()`` problem
 for the case of trivial format strings.
 

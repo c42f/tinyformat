@@ -2,6 +2,13 @@
 #include <climits>
 #include <cfloat>
 
+#ifdef SPEED_TEST
+#include <boost/format.hpp>
+#include <iomanip>
+#include <stdio.h>
+#endif
+
+
 // Throw instead of abort() so we can test error conditions.
 #define TINYFORMAT_ERROR(reason) \
     throw std::runtime_error(reason);
@@ -55,7 +62,7 @@ struct TestWrap
 };
 
 
-int main()
+void unitTests()
 {
     // Test various basic format specs against results of sprintf
     CHECK_EQUAL(tfm::format("%s", "asdf"), "asdf");
@@ -144,6 +151,64 @@ int main()
     TestWrap wrap;
     assert(wrap.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
            "10: someformat asdf:2:4");
+}
 
+
+#ifdef SPEED_TEST
+void speedTest(const std::string& which)
+{
+    // Following is required so that we're not limited by per-character
+    // buffering.
+    std::ios_base::sync_with_stdio(false);
+    const long maxIter = 2000000L;
+    if(which == "printf")
+    {
+        // libc version
+        for(long i = 0; i < maxIter; ++i)
+            printf("%0.10f:%04d:%+g:%s:%p:%c:%%\n",
+                1.234, 42, 3.13, "str", (void*)1000, (int)'X');
+    }
+    else if(which == "iostreams")
+    {
+        // Std iostreams version.  What a mess!!
+        for(long i = 0; i < maxIter; ++i)
+            std::cout << std::setprecision(10) << 1.234 << ":"
+                << std::setw(4) << std::setfill('0') << 42 << std::setfill(' ') << ":"
+                << std::setiosflags(std::ios::showpos) << 3.13 << std::resetiosflags(std::ios::showpos) << ":"
+                << "str" << ":"
+                << (void*)1000 << ":"
+                << (int)'X' << ":%\n";
+    }
+    else if(which == "tinyformat")
+    {
+        // tinyformat version.
+        for(long i = 0; i < maxIter; ++i)
+            tfm::printf("%0.10f:%04d:%+g:%s:%p:%c:%%\n",
+                        1.234, 42, 3.13, "str", (void*)1000, (int)'X');
+    }
+    else if(which == "boost")
+    {
+        // boost::format version
+        for(long i = 0; i < maxIter; ++i)
+            std::cout << boost::format("%0.10f:%04d:%+g:%s:%p:%c:%%\n")
+                % 1.234 % 42 % 3.13 % "str" % (void*)1000 % (int)'X';
+    }
+    else
+    {
+        tfm::printf("speed test for which version?");
+        abort();
+    }
+}
+#endif
+
+
+int main(int argc, char* argv[])
+{
+#ifdef SPEED_TEST
+    if(argc >= 2)
+        speedTest(argv[1]);
+#else
+    unitTests();
+#endif
     return 0;
 }
