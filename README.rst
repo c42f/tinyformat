@@ -37,7 +37,8 @@ To print the date, we might use::
                 weekday, month, day, hour, min);
 
 (The types here are intentionally odd to emphasize the type safety of the
-interface.)  The same thing could be achieved using either of the two
+interface.  As shown, it is possible to print a ``std::string`` using the
+``"%s"`` conversion.) The same thing could be achieved using either of the two
 convenience functions.  One returns a ``std::string``::
 
     std::string date = tfm::format("%s, %s %d, %.2d:%.2d\n",
@@ -275,7 +276,17 @@ possible.
 The ultimate in lightweight dependencies are the solutions provided by the C++
 and C libraries.  However, both the C++ iostreams and C's printf() have
 well known usability problems: iostreams are hopelessly verbose for complicated
-formatting and printf() lacks type safety.
+formatting and printf() lacks extensibility and type safety.  For example::
+
+    // Verbose; hard to read, hard to type:
+    std::cout << std::setprecision(2) << std::fixed << 1.23456 << "\n";
+    // The alternative using a format string is much easier on the eyes
+    tfm::printf("%.2f\n", 1.23456);
+
+    // Type mismatch between "%s" and int: will cause a segfault at runtime!
+    printf("%s", 1);
+    // The following is perfectly fine, and will result in "1" being printed.
+    tfm::printf("%s", 1);
 
 On the other hand, there are plenty of excellent and complete libraries which
 solve the formatting problem in great generality (boost.format and fastformat
