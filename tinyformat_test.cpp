@@ -39,12 +39,13 @@ void compareSprintf(const Args&... args)
     catch(std::runtime_error&) {}                           \
 }
 
-#define CHECK_EQUAL(a, b)                           \
-if(!((a) == (b)))                                   \
-{                                                   \
-    std::cout << (a) << " != " << (b) << "\n";    \
-    std::cout << "[" #a ", " #b "]\n";    \
-    assert(0 && "results don't match, see above");  \
+#define CHECK_EQUAL(a, b)                                  \
+if(!((a) == (b)))                                          \
+{                                                          \
+    std::cout << "test failed, line " << __LINE__ << "\n"; \
+    std::cout << (a) << " != " << (b) << "\n";             \
+    std::cout << "[" #a ", " #b "]\n";                     \
+    ++nfailed;                                             \
 }
 
 
@@ -62,8 +63,14 @@ struct TestWrap
 };
 
 
-void unitTests()
+int unitTests()
 {
+    int nfailed = 0;
+#   ifdef _MSC_VER
+    // floats are printed with three digit exponents on windows, which messes
+    // up the tests.  Turn this off for consistency:
+    _set_output_format(_TWO_DIGIT_EXPONENT);
+#   endif
     // Test various basic format specs against results of sprintf
     CHECK_EQUAL(tfm::format("%s", "asdf"), "asdf");
     CHECK_EQUAL(tfm::format("%d", 1234), "1234");
@@ -82,6 +89,8 @@ void unitTests()
     CHECK_EQUAL(tfm::format("%hc", (short)65), "A");
     CHECK_EQUAL(tfm::format("%lc", (long)65), "A");
     CHECK_EQUAL(tfm::format("%s", "asdf_123098"), "asdf_123098");
+    // Note: All tests printing pointers fail on windows, since there's no
+    // standard numerical representation.
     CHECK_EQUAL(tfm::format("%p", (void*)0x12345), "0x12345");
     CHECK_EQUAL(tfm::format("%%%s", "asdf"), "%asdf"); // note: plain "%%" format gives warning with gcc
     // chars with int format specs are printed as ints:
@@ -123,9 +132,9 @@ void unitTests()
     // compareSprintf("%.4d", -10); // negative numbers + precision don't quite work.
 
     // General "complicated" format spec test
-    CHECK_EQUAL(tfm::format("%0.10f:%04d:%+g:%s:%p:%c:%%:%%asdf",
-                       1.234, 42, 3.13, "str", (void*)1000, (int)'X'),
-                "1.2340000000:0042:+3.13:str:0x3e8:X:%:%asdf");
+    CHECK_EQUAL(tfm::format("%0.10f:%04d:%+g:%s:%#X:%c:%%:%%asdf",
+                       1.234, 42, 3.13, "str", 0XDEAD, (int)'X'),
+                "1.2340000000:0042:+3.13:str:0XDEAD:X:%:%asdf");
     // Test wrong number of args
     EXPECT_ERROR(
         tfm::format("%d", 5, 10)
@@ -151,6 +160,7 @@ void unitTests()
     TestWrap wrap;
     assert(wrap.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
            "10: someformat asdf:2:4");
+    return nfailed;
 }
 
 
@@ -207,8 +217,8 @@ int main(int argc, char* argv[])
 #ifdef SPEED_TEST
     if(argc >= 2)
         speedTest(argv[1]);
-#else
-    unitTests();
-#endif
     return 0;
+#else
+    return unitTests();
+#endif
 }

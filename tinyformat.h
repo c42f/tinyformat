@@ -338,14 +338,14 @@ inline const char* printFormatStringLiteral(std::ostream& out, const char* fmt)
     {
         if(*c == '%')
         {
-            out.write(fmt, c - fmt);
+            out.write(fmt, static_cast<std::streamsize>(c - fmt));
             fmt = ++c;
             if(*c != '%')
                 return c;
             // for '%%' the required '%' will be tacked onto the next section.
         }
     }
-    out.write(fmt, c - fmt);
+    out.write(fmt, static_cast<std::streamsize>(c - fmt));
     return c;
 }
 
@@ -385,14 +385,22 @@ struct is_convertible
         // Try to convert a T1 to a T2 by plugging into tryConvert
         static fail tryConvert(...);
         static succeed tryConvert(const T2&);
-        typedef T1* T1ptr;
+        static const T1& makeT1();
     public:
+#       ifdef _MSC_VER
+        // Disable spurious loss of precision warning in tryConvert(makeT1())
+#       pragma warning(push)
+#       pragma warning(disable:4244)
+#       endif
         // Standard trick: the (...) version of tryConvert will be chosen from
         // the overload set only if the version taking a T2 doesn't match.
         // Then we compare the sizes of the return types to check which
         // function matched.  Very neat, in a disgusting kind of way :)
         static const bool value =
-            sizeof(tryConvert(*(T1ptr()))) == sizeof(succeed);
+            sizeof(tryConvert(makeT1())) == sizeof(succeed);
+#       ifdef _MSC_VER
+#       pragma warning(pop)
+#       endif
 };
 
 
@@ -417,15 +425,15 @@ struct formatValueAsType<T,fmtT,true>
 // Return true if formatting proceeded (generic version always returns false)
 template<typename T>
 inline bool formatCStringTruncate(std::ostream& out, const T& value,
-                                  size_t truncLen)
+                                  std::streamsize truncLen)
 {
     return false;
 }
 #define TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE(type)             \
 inline bool formatCStringTruncate(std::ostream& out, type* value,    \
-                                  size_t truncLen)                   \
+                                  std::streamsize truncLen)          \
 {                                                                    \
-    size_t len = 0;                                                  \
+    std::streamsize len = 0;                                         \
     while(len < truncLen && value[len] != 0)                         \
         ++len;                                                       \
     out.write(value, len);                                           \
