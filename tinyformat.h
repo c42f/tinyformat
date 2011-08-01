@@ -396,19 +396,20 @@ struct is_convertible
 };
 
 
-// Format the value by casting to a char.  This default implementation should
-// never be called (see below).
-template<typename T, bool convertible>
-struct formatValueAsChar
+// Format the value by casting to type fmtT.  This default implementation
+// should never be called.
+template<typename T, typename fmtT, bool convertible>
+struct formatValueAsType
 {
-    static void invoke(std::ostream& out, const T& value) { }
+    static void invoke(std::ostream& out, const T& value) { assert(0); }
 };
-// Specialized version for types that can actually be converted to char.
-template<typename T>
-struct formatValueAsChar<T,true>
+// Specialized version for types that can actually be converted to fmtT, as
+// indicated by the "convertible" template parameter.
+template<typename T, typename fmtT>
+struct formatValueAsType<T,fmtT,true>
 {
     static void invoke(std::ostream& out, const T& value)
-        { out << static_cast<char>(value); }
+        { out << static_cast<fmtT>(value); }
 };
 
 
@@ -451,41 +452,26 @@ TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE(char)
 // The format specification is provided in the range [fmtBegin, fmtEnd).
 //
 // By default, formatValue() uses the usual stream insertion operator
-// operator<< to format the type T.
+// operator<< to format the type T, with special cases for the %c and %p
+// conversions.
 template<typename T>
 inline void formatValue(std::ostream& out, const char* fmtBegin,
                         const char* fmtEnd, const T& value)
 {
-    // The mess here is to support the %c conversion: Convert value into
-    // a char and print it as one if possible, otherwise print as usual.
+    // The mess here is to support the %c and %p conversions: if these
+    // conversions are active we try to convert the type to a char or const
+    // void* respectively and format that instead of the value itself.  For the
+    // %p conversion it's important to avoid dereferencing the pointer, which
+    // could otherwise lead to a crash when printing a dangling (const char*).
     const bool canConvertToChar = detail::is_convertible<T,char>::value;
+    const bool canConvertToVoidPtr = detail::is_convertible<T, const void*>::value;
     if(canConvertToChar && *(fmtEnd-1) == 'c')
-        detail::formatValueAsChar<T, canConvertToChar>::invoke(out, value);
+        detail::formatValueAsType<T, char, canConvertToChar>::invoke(out, value);
+    else if(canConvertToVoidPtr && *(fmtEnd-1) == 'p')
+        detail::formatValueAsType<T, const void*, canConvertToVoidPtr>::invoke(out, value);
     else
         out << value;
 }
-
-
-// Overloaded versions for character pointer types to correctly support "%p"
-// conversion.  Without this, tfm::printf("%p", (const char*)0) would crash.
-#define TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(charType)         \
-inline void formatValue(std::ostream& out, charType* fmtBegin,        \
-                        const char* fmtEnd, const char* value)        \
-{                                                                     \
-    if(*(fmtEnd-1) == 'p')                                            \
-        out << static_cast<const void*>(value);                       \
-    else                                                              \
-        out << value;                                                 \
-}
-// Ugh, what a mess.  We need to define an overload for each of the character
-// pointer types specifically so that they all get correctly picked up.
-TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(char)
-TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(const char)
-TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(signed char)
-TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(const signed char)
-TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(unsigned char)
-TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR(const unsigned char)
-#undef TINYFORMAT_DEFINE_FORMATVALUE_CHARACTER_PTR
 
 
 // Overloaded version for char types to support printing as an integer
