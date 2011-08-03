@@ -147,6 +147,28 @@ above are probably irrelevant and will be ignored by the underlying
 in the output of ``yourType``, but that's about it.
 
 
+Special case handling for "%p" and "%c"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Tinyformat normally uses ``operator<<`` to convert types to strings.  However,
+the "%p" and "%c" conversions require special rules for robustness.  Consider::
+
+    uint8_t* pixels = get_pixels(/* ... */);
+    tfm::printf("%p", pixels);
+
+Clearly the intention here is to print a representation of the *pointer* to
+``pixels``, but since ``uint8_t`` is a character type the compiler would
+attempt to print it as a string if we blindly fed it into ``operator<<``.  To
+counter this kind of madness, tinyformat tries to static_cast any type fed to
+the "%p" conversion into a ``const void*`` before printing.  If this can't be
+done at compile time the library falls back to using ``operator<<`` as usual.
+
+The "%c" conversion has a similar problem: it signifies that the given integral
+type should be converted into a ``char`` before printing.  The solution is
+identical: attempt to convert the provided type into a char using
+``static_cast`` if possible, and if not fall back to using ``operator<<``.
+
+
 Incompatibilities with C99 printf
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -298,7 +298,7 @@ inline unsigned int streamStateFromFormat(std::ostream& out,
         case 'a': case 'A':
             break; // C99 hexadecimal floating point??  punt!
         case 'c':
-            // Handled elsewhere by overriding formatValue()
+            // Handled as special case inside formatValue()
             break;
         case 's':
             if(precisionSet)
