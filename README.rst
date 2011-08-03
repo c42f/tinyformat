@@ -49,6 +49,16 @@ The other prints to the ``std::cout`` stream::
 
     tfm::printf("%s, %s %d, %.2d:%.2d\n", weekday, month, day, hour, min);
 
+Here's an example which further emphasizes the type safety; it will work with
+any type which has the usual stream insertion operator ``<<`` defined.  If not,
+it will fail at compile time::
+
+    template<typename T>
+    void myPrint(const T& value)
+    {
+        tfm::printf("My value is %s\n", value);
+    }
+
 
 Function reference
 ------------------
@@ -97,6 +107,71 @@ Finally, ``printf()`` is a convenience function which calls ``format()`` with
     template<typename T1, typename T2, ...>
     void printf(const char* formatString,
                 const T1& value1, const T2& value1, ...)
+
+
+Format strings and type safety
+------------------------------
+
+Tinyformat parses C99 format strings to guide the formatting process --- please
+refer to any standard C99 printf documentation for format string syntax.  In
+contrast to printf, tinyformat does not use the format string to decide on
+the type to be formatted so this does not compromise the type safety: *you may
+use any format specifier with any C++ type*.  The author suggests standardising
+on the ``%s`` conversion unless formatting numeric types.
+
+Let's look at what happens when you execute the function call::
+
+    tfm::format(outStream, "%+6.4f", yourType);
+
+First, the library parses the format string, and uses it to modify the state of
+``outStream``:
+
+1. The ``outStream`` formatting flags are cleared and the width, precision and
+   fill reset to the default.
+2. The flag ``'+'`` means to prefix positive numbers with a ``'+'``; tinyformat
+   executes ``outStream.setf(std::ios::showpos)``
+3. The number 6 gives the field width; execute ``outStream.width(6)``.
+4. The number 4 gives the precision; execute ``outStream.precision(4)``.
+5. The conversion specification character ``'f'`` means that floats should be
+   formatted with a fixed number of digits; this corresponds to executing
+   ``outStream.setf(std::ios::fixed, std::ios::floatfield);``
+
+After all these steps, tinyformat executes::
+
+    outStream << yourType;
+
+and finally restores the stream flags, precision and fill.  What happens if
+``yourType`` isn't actually a floating point type?  In this case the flags set
+above are probably irrelevant and will be ignored by the underlying
+``std::ostream`` implementation.  The field width of six may cause some padding
+in the output of ``yourType``, but that's about it.
+
+
+Incompatibilities with C99 printf
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Not all features of printf can be simulated simply using standard iostreams.
+Here's a list of known incompatibilities:
+
+* The C99 ``"%a"`` and ``"%A"`` hexadecimal floating point conversions are not
+  supported since the iostreams don't have the necessary flags.  These add no
+  extra flags to the stream state but do trigger a conversion.
+* The precision for integer conversions cannot be supported by the iostreams
+  state independently of the field width.  (Note: **this is only a
+  problem for certain obscure integer conversions**; float conversions like
+  ``%6.4f`` work correctly.)  In tinyformat the field width takes precedence,
+  so the 4 in ``%6.4d`` will be ignored.  However, if the field width is not
+  specified, the width used internally is set equal to the precision and padded
+  with zeros on the left.  That is, a conversion like ``%.4d`` effectively
+  becomes ``%04d`` internally.  This isn't correct for every case (eg, negative
+  numbers end up with one less digit than desired) but it's about the closest
+  simple solution within the iostream model.
+* The ``*`` and ``*m$`` variable width/precision fields are not supported.
+  These require nonlocal information from the format string and arguments
+  which would make the implementation somewhat more complicated.
+* The ``"%n"`` query specifier isn't supported to keep things simple and will
+  result in a call to ``TINYFORMAT_ERROR``.
+* Wide characters with the ``%ls`` conversion are not supported.
 
 
 Error handling
@@ -162,31 +237,6 @@ parameters.  Note that the content of ``TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS``
 *must contain a trailing comma for every extra argument* and therefore can't be
 a normal macro parameter to ``TINYFORMAT_WRAP_FORMAT`` (the commas would look
 like more than one macro argument to the preprocessor).
-
-
-Incompatibilities with C99 printf
----------------------------------
-
-Not all features of printf can be simulated simply using standard iostreams.
-Here's a list of known incompatibilities:
-
-* The C99 ``"%a"`` and ``"%A"`` hexadecimal floating point conversions are not
-  supported since the iostreams don't have the necessary flags.  These add no
-  extra flags to the stream state but do trigger a conversion.
-* The precision for integer conversions cannot be supported by the iostreams
-  state independently of the field width.  In tinyformat the field width takes
-  precedence, so the 4 in ``%6.4d`` will be ignored.  However, if the field
-  width is not specified, the width used internally is set equal to the
-  precision and padded with zeros on the left.  That is, a conversion like
-  ``%.4d`` effectively becomes ``%04d`` internally.  This isn't correct for
-  every case (eg, negative numbers end up with one less digit than desired) but
-  it's about the closest simple solution within the iostream model.
-* The ``*`` and ``*m$`` variable width/precision fields are not supported.
-  These require nonlocal information from the format string and arguments
-  which would make the implementation a lot more complicated.
-* The ``"%n"`` query specifier isn't supported to keep things simple, though
-  it may be possible to implement.
-* Wide characters with the ``%ls`` conversion are not supported.
 
 
 Benchmarks
