@@ -147,8 +147,8 @@ above are probably irrelevant and will be ignored by the underlying
 in the output of ``yourType``, but that's about it.
 
 
-Special case handling for "%p" and "%c"
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Special cases for "%p", "%c" and "%s"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Tinyformat normally uses ``operator<<`` to convert types to strings.  However,
 the "%p" and "%c" conversions require special rules for robustness.  Consider::
@@ -167,6 +167,10 @@ The "%c" conversion has a similar problem: it signifies that the given integral
 type should be converted into a ``char`` before printing.  The solution is
 identical: attempt to convert the provided type into a char using
 ``static_cast`` if possible, and if not fall back to using ``operator<<``.
+
+The "%s" conversion sets the boolalpha flag on the formatting stream.  This
+means that a ``bool`` variable printed with "%s" will come out as ``true`` or
+``false`` rather than the ``1`` or ``0`` that you would otherwise get.
 
 
 Incompatibilities with C99 printf

@@ -98,6 +98,9 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%hhu", (unsigned char)65), "65");
     CHECK_EQUAL(tfm::format("%hhd", (signed char)65), "65");
     CHECK_EQUAL(tfm::format("%p", (const char*)0x10), "0x10"); // should print address, not string.
+    // bools with string format spec are printed as "true" or "false"
+    CHECK_EQUAL(tfm::format("%s", true), "true");
+    CHECK_EQUAL(tfm::format("%d", true), "1");
 
     // Test precision & width
     CHECK_EQUAL(tfm::format("%10d", -10), "       -10");

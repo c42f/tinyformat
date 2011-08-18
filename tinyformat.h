@@ -185,10 +185,9 @@ inline unsigned int streamStateFromFormat(std::ostream& out,
     out.width(0);
     out.precision(6);
     out.fill(' ');
-    // Reset most flags, though leave the boolalpha state alone - there's no
-    // equivalent format flag anyway.  Also ignore irrelevant unitbuf & skipws.
+    // Reset most flags; ignore irrelevant unitbuf & skipws.
     out.unsetf(std::ios::adjustfield | std::ios::basefield |
-               std::ios::floatfield | std::ios::showbase |
+               std::ios::floatfield | std::ios::showbase | std::ios::boolalpha |
                std::ios::showpoint | std::ios::showpos | std::ios::uppercase);
     unsigned int extraFlags = 0;
     bool precisionSet = false;
@@ -303,6 +302,8 @@ inline unsigned int streamStateFromFormat(std::ostream& out,
         case 's':
             if(precisionSet)
                 extraFlags |= Flag_TruncateToPrecision;
+            // Make %s print booleans as "true" and "false"
+            out.setf(std::ios::boolalpha);
             break;
         case 'n':
             // Not supported - will cause problems!
