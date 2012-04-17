@@ -245,24 +245,29 @@ write a version of ``error()`` for every number of arguments you want to
 support.  However, tinyformat provides a macro ``TINYFORMAT_WRAP_FORMAT`` to
 do this for you in a handy range of cases.  (In fact, this is the way that the
 convenience functions ``format()`` and ``printf()`` are defined internally.)
-Here's what the usage looks like::
+Here's what the usage looks like in the case above::
 
+    #undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
     #define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS int code,
     TINYFORMAT_WRAP_FORMAT(
         void,                                        /* return type */
         error,                                       /* function name */
+        /*empty*/,                                   /* function declaration suffix (eg, const) */
         std::cerr << "error (code " << code << ")";, /* stuff before format()*/
         std::cerr,                                   /* stream name */
         /*empty*/                                    /* stuff after format() */
     )
     #undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
+    #define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 
 This defines an overloaded set of ``error()`` functions which act like
 the C++0x definition given above, at least up until ``maxPararms`` format
 parameters.  Note that the content of ``TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS``
-*must contain a trailing comma for every extra argument* and therefore can't be
-a normal macro parameter to ``TINYFORMAT_WRAP_FORMAT`` (the commas would look
-like more than one macro argument to the preprocessor).
+is defined to be empty by default for convenience.  In this case we must
+redefine it since we want an extra ``code`` argument.  It's important to note
+that this macro *must contain a trailing comma for every extra argument* and
+therefore can't be a normal macro parameter to ``TINYFORMAT_WRAP_FORMAT`` (the
+commas would look like more than one macro argument to the preprocessor).
 
 
 Benchmarks

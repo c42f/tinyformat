@@ -91,11 +91,12 @@
 //              const T1& value1, const T2& value1, ...)
 //
 //
-// Error handling: Define TINYFORMAT_ERROR to customize the error handling,
-// otherwise calls assert() on error.
+// Error handling: Define TINYFORMAT_ERROR to customize the error handling for
+// format strings which are unsupported or have the wrong number of format
+// specifiers (calls assert() by default).
 //
-// User defined types: Overload formatValue() or formatValueBasic() to
-// customize printing of user defined types.  Uses operator<< by default.
+// User defined types: Uses operator<< for user defined types by default.
+// Overload formatValue() or formatValueBasic() for more control.
 //
 // Wrapping tfm::format inside a user defined format function: See the macros
 // TINYFORMAT_WRAP_FORMAT and TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS.
@@ -739,16 +740,20 @@ void format(std::ostream& out, const char* fmt , const T1& v1, const T2& v2, con
 // interested in C++98 support, but still have things work with C++0x.
 //
 // Note that TINYFORMAT_WRAP_EXTRA_ARGS cannot be a macro parameter because it
-// must expand to a comma separated list (or nothing, as here)/
+// must expand to a comma separated list (or nothing, as used for printf below)
+
+// Define to nothing for convenience.
+#define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 
 /*[[[cog
 cog.outl(formatAsMacro(
-'''#define TINYFORMAT_WRAP_FORMAT(returnType, funcName, bodyPrefix, streamName, bodySuffix)'''))
+'''#define TINYFORMAT_WRAP_FORMAT(returnType, funcName, funcDeclSuffix,
+                               bodyPrefix, streamName, bodySuffix)'''))
 
 fillTemplate(
 r'''%(templateSpec)s
 returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt
-                    %(paramList)s)
+                    %(paramList)s) funcDeclSuffix
 {
     bodyPrefix
     tinyformat::format(streamName, fmt %(argList)s);
@@ -757,10 +762,11 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt
 cog.outl()
 
 ]]]*/
-#define TINYFORMAT_WRAP_FORMAT(returnType, funcName, bodyPrefix, streamName, bodySuffix) \
+#define TINYFORMAT_WRAP_FORMAT(returnType, funcName, funcDeclSuffix,       \
+                               bodyPrefix, streamName, bodySuffix)         \
 inline                                                                     \
 returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
-                    )                                                      \
+                    ) funcDeclSuffix                                       \
 {                                                                          \
     bodyPrefix                                                             \
     tinyformat::format(streamName, fmt );                                  \
@@ -768,7 +774,7 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
 }                                                                          \
 template<typename T1>                                                      \
 returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
-                    , const T1& v1)                                        \
+                    , const T1& v1) funcDeclSuffix                         \
 {                                                                          \
     bodyPrefix                                                             \
     tinyformat::format(streamName, fmt , v1);                              \
@@ -776,7 +782,7 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
 }                                                                          \
 template<typename T1, typename T2>                                         \
 returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
-                    , const T1& v1, const T2& v2)                          \
+                    , const T1& v1, const T2& v2) funcDeclSuffix           \
 {                                                                          \
     bodyPrefix                                                             \
     tinyformat::format(streamName, fmt , v1, v2);                          \
@@ -784,7 +790,7 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
 }                                                                          \
 template<typename T1, typename T2, typename T3>                            \
 returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
-                    , const T1& v1, const T2& v2, const T3& v3)            \
+                    , const T1& v1, const T2& v2, const T3& v3) funcDeclSuffix \
 {                                                                          \
     bodyPrefix                                                             \
     tinyformat::format(streamName, fmt , v1, v2, v3);                      \
@@ -792,7 +798,7 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
 }                                                                          \
 template<typename T1, typename T2, typename T3, typename T4>               \
 returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
-                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4) \
+                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4) funcDeclSuffix \
 {                                                                          \
     bodyPrefix                                                             \
     tinyformat::format(streamName, fmt , v1, v2, v3, v4);                  \
@@ -800,7 +806,7 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
 }                                                                          \
 template<typename T1, typename T2, typename T3, typename T4, typename T5>  \
 returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
-                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5) \
+                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5) funcDeclSuffix \
 {                                                                          \
     bodyPrefix                                                             \
     tinyformat::format(streamName, fmt , v1, v2, v3, v4, v5);              \
@@ -808,7 +814,7 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
 }                                                                          \
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6> \
 returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
-                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6) \
+                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6) funcDeclSuffix \
 {                                                                          \
     bodyPrefix                                                             \
     tinyformat::format(streamName, fmt , v1, v2, v3, v4, v5, v6);          \
@@ -816,7 +822,7 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
 }                                                                          \
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7> \
 returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
-                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7) \
+                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7) funcDeclSuffix \
 {                                                                          \
     bodyPrefix                                                             \
     tinyformat::format(streamName, fmt , v1, v2, v3, v4, v5, v6, v7);      \
@@ -824,7 +830,7 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
 }                                                                          \
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8> \
 returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
-                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8) \
+                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8) funcDeclSuffix \
 {                                                                          \
     bodyPrefix                                                             \
     tinyformat::format(streamName, fmt , v1, v2, v3, v4, v5, v6, v7, v8);  \
@@ -832,7 +838,7 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
 }                                                                          \
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9> \
 returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
-                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9) \
+                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9) funcDeclSuffix \
 {                                                                          \
     bodyPrefix                                                             \
     tinyformat::format(streamName, fmt , v1, v2, v3, v4, v5, v6, v7, v8, v9); \
@@ -840,7 +846,7 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
 }                                                                          \
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10> \
 returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
-                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10) \
+                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10) funcDeclSuffix \
 {                                                                          \
     bodyPrefix                                                             \
     tinyformat::format(streamName, fmt , v1, v2, v3, v4, v5, v6, v7, v8, v9, v10); \
@@ -873,16 +879,13 @@ void printf(const char* fmt, const Args&... args)
 #else
 
 // C++98 - define the convenience functions using the wrapping macros
-//
-// Neither format() or printf() has extra args, so define to nothing.
-#define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 // std::string format(const char* fmt, const Args&... args);
-TINYFORMAT_WRAP_FORMAT(std::string, format,
+TINYFORMAT_WRAP_FORMAT(std::string, format, /*empty*/,
                        std::ostringstream oss;, oss,
                        return oss.str();)
+
 // void printf(const char* fmt, const Args&... args)
-TINYFORMAT_WRAP_FORMAT(void, printf, /*empty*/, std::cout, /*empty*/)
-#undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
+TINYFORMAT_WRAP_FORMAT(void, printf, /*empty*/, /*empty*/, std::cout, /*empty*/)
 
 #endif
 
