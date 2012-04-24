@@ -192,12 +192,10 @@ Here's a list of known incompatibilities:
   becomes ``%04d`` internally.  This isn't correct for every case (eg, negative
   numbers end up with one less digit than desired) but it's about the closest
   simple solution within the iostream model.
-* The ``*`` and ``*m$`` variable width/precision fields are not supported.
-  These require nonlocal information from the format string and arguments
-  which would make the implementation somewhat more complicated.
 * The ``"%n"`` query specifier isn't supported to keep things simple and will
   result in a call to ``TINYFORMAT_ERROR``.
-* Wide characters with the ``%ls`` conversion are not supported.
+* Wide characters with the ``%ls`` conversion are not supported, though you
+  could write your own ``std::ostream`` insertion operator for ``wchar_t*``.
 
 
 Error handling
@@ -219,11 +217,7 @@ suggested for user defined types, unless the type is inherently numeric.
 For further customization, the user can override the ``formatValue()``
 function to specify formatting independently of the stream insertion operator.
 If you override this function, the library will have already parsed the format
-specification and set the stream flags accordingly.  If ``formatValue()`` isn't
-general enough, it's also possible to overload the ``formatValueBasic()``
-function to allow the user defined formatter to do its own parsing of the
-format specification string and setting of stream flags.  See the source for
-details on these functions.
+specification and set the stream flags accordingly - see the source for details.
 
 
 Wrapping tfm::format() inside a user defined format function

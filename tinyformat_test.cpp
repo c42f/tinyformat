@@ -57,9 +57,9 @@ struct TestWrap
 #   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS int code,
     // std::string error(int code, const char* fmt, const Args&... args);
     TINYFORMAT_WRAP_FORMAT(std::string, error, /**/,
-                        m_oss.clear(); m_oss << code << ": ";,
-                        m_oss,
-                        return m_oss.str();)
+                           m_oss.clear(); m_oss << code << ": ";,
+                           m_oss,
+                           return m_oss.str();)
 #   undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 #   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 };
@@ -110,6 +110,11 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%10.4f", 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%.f", 10.1), "10");
     CHECK_EQUAL(tfm::format("%.2s", "asdf"), "as"); // strings truncate to precision
+//    // Test variable precision & width
+    CHECK_EQUAL(tfm::format("%*.4f", 10, 1234.1234567890), " 1234.1235");
+    CHECK_EQUAL(tfm::format("%10.*f", 4, 1234.1234567890), " 1234.1235");
+    CHECK_EQUAL(tfm::format("%*.*f", 10, 4, 1234.1234567890), " 1234.1235");
+    CHECK_EQUAL(tfm::format("%*.*f", -10, 4, 1234.1234567890), "1234.1235 ");
 
     // Test flags
     CHECK_EQUAL(tfm::format("%#x", 0x271828), "0x271828");
@@ -150,6 +155,13 @@ int unitTests()
     // Unterminated format spec
     EXPECT_ERROR(
         tfm::format("%123", 10)
+    )
+    // Types used to specify variable width/precision must be convertible to int.
+    EXPECT_ERROR(
+        tfm::format("%0*d", "thing that can't convert to int", 42)
+    )
+    EXPECT_ERROR(
+        tfm::format("%0.*d", "thing that can't convert to int", 42)
     )
 
     // Test that formatting is independent of underlying stream state.
@@ -210,8 +222,7 @@ void speedTest(const std::string& which)
     }
     else
     {
-        tfm::printf("speed test for which version?");
-        abort();
+        assert(0 && "speed test for which version?");
     }
 }
 #endif
