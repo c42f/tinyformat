@@ -97,15 +97,23 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%hc", (short)65), "A");
     CHECK_EQUAL(tfm::format("%lc", (long)65), "A");
     CHECK_EQUAL(tfm::format("%s", "asdf_123098"), "asdf_123098");
-    // Note: All tests printing pointers fail on windows, since there's no
-    // standard numerical representation.
+    // Note: All tests printing pointers are different on windows, since
+    // there's no standard numerical representation.
+#   ifdef _MSC_VER
+    CHECK_EQUAL(tfm::format("%p", (void*)0x12345), "00012345");
+#   else
     CHECK_EQUAL(tfm::format("%p", (void*)0x12345), "0x12345");
+#   endif
     CHECK_EQUAL(tfm::format("%%%s", "asdf"), "%asdf"); // note: plain "%%" format gives warning with gcc
     // chars with int format specs are printed as ints:
     CHECK_EQUAL(tfm::format("%hhd", (char)65), "65");
     CHECK_EQUAL(tfm::format("%hhu", (unsigned char)65), "65");
     CHECK_EQUAL(tfm::format("%hhd", (signed char)65), "65");
+#   ifdef _MSC_VER
+    CHECK_EQUAL(tfm::format("%p", (const char*)0x10), "00000010");
+#   else
     CHECK_EQUAL(tfm::format("%p", (const char*)0x10), "0x10"); // should print address, not string.
+#   endif
     // bools with string format spec are printed as "true" or "false"
     CHECK_EQUAL(tfm::format("%s", true), "true");
     CHECK_EQUAL(tfm::format("%d", true), "1");

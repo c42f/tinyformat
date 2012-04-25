@@ -214,7 +214,7 @@ struct convertToInt
 template<typename T>
 struct convertToInt<T,true>
 {
-    static int invoke(const T& value) { return value; }
+    static int invoke(const T& value) { return static_cast<int>(value); }
 };
 
 } // namespace detail
@@ -426,8 +426,8 @@ void FormatIterator::accept(const T& value)
     {
         m_fmt = printFormatStringLiteral(m_out, m_fmt);
         fmtEnd = streamStateFromFormat(m_out, m_extraFlags, m_fmt, 0, 0);
-        m_wantWidth     = m_extraFlags & Flag_VariableWidth;
-        m_wantPrecision = m_extraFlags & Flag_VariablePrecision;
+        m_wantWidth     = (m_extraFlags & Flag_VariableWidth) != 0;
+        m_wantPrecision = (m_extraFlags & Flag_VariablePrecision) != 0;
     }
     // Consume value as variable width and precision specifier if necessary
     if(m_extraFlags & (Flag_VariableWidth | Flag_VariablePrecision))
