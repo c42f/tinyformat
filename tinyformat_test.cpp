@@ -1,3 +1,9 @@
+#if defined(__linux__) && defined(__clang__)
+// Workaround for bug in gcc 4.4 standard library headers when compling with
+// clang in C++11 mode.
+namespace std { class type_info; }
+#endif
+
 #include <stdexcept>
 #include <climits>
 #include <cfloat>
