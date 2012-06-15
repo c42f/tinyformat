@@ -821,6 +821,10 @@ void format(FormatIterator& fmtIter , const T1& v1, const T2& v2, const T3& v3, 
 // Note that TINYFORMAT_WRAP_EXTRA_ARGS cannot be a macro parameter because it
 // must expand to a comma separated list (or nothing, as used for printf below)
 
+#ifndef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
+#   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
+#endif
+
 /*[[[cog
 cog.outl(formatAsMacro(
 '''#define TINYFORMAT_WRAP_FORMAT(returnType, funcName, funcDeclSuffix,
@@ -978,6 +982,7 @@ void printf(const char* fmt, const Args&... args)
 
 // template<typename... Args>
 // void format(std::ostream& out, const char* fmt, const Args&... args)
+#undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 #define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS std::ostream& out,
 TINYFORMAT_WRAP_FORMAT(void, format, /*empty*/, /*empty*/, out, /*empty*/)
 #undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
