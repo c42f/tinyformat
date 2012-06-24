@@ -165,9 +165,10 @@ struct is_convertible
         static const T1& makeT1();
     public:
 #       ifdef _MSC_VER
-        // Disable spurious loss of precision warning in tryConvert(makeT1())
+        // Disable spurious loss of precision warnings in tryConvert(makeT1())
 #       pragma warning(push)
 #       pragma warning(disable:4244)
+#       pragma warning(disable:4267)
 #       endif
         // Standard trick: the (...) version of tryConvert will be chosen from
         // the overload set only if the version taking a T2 doesn't match.
