@@ -165,10 +165,9 @@ struct is_convertible
         static const T1& makeT1();
     public:
 #       ifdef _MSC_VER
-        // Disable spurious loss of precision warnings in tryConvert(makeT1())
+        // Disable spurious loss of precision warning in tryConvert(makeT1())
 #       pragma warning(push)
 #       pragma warning(disable:4244)
-#       pragma warning(disable:4267)
 #       endif
         // Standard trick: the (...) version of tryConvert will be chosen from
         // the overload set only if the version taking a T2 doesn't match.
@@ -187,7 +186,7 @@ struct is_convertible
 template<typename T, typename fmtT, bool convertible = is_convertible<T, fmtT>::value>
 struct formatValueAsType
 {
-    static void invoke(std::ostream& out, const T& value) { assert(0); }
+    static void invoke(std::ostream& out, const T& value) { (void) out, (void) value; assert(0); }
 };
 // Specialized version for types that can actually be converted to fmtT, as
 // indicated by the "convertible" template parameter.
@@ -239,6 +238,8 @@ template<typename T>
 inline void formatValue(std::ostream& out, const char* fmtBegin,
                         const char* fmtEnd, const T& value)
 {
+    (void) fmtBegin;
+
     // The mess here is to support the %c and %p conversions: if these
     // conversions are active we try to convert the type to a char or const
     // void* respectively and format that instead of the value itself.  For the
@@ -260,6 +261,7 @@ inline void formatValue(std::ostream& out, const char* fmtBegin,
 inline void formatValue(std::ostream& out, const char* fmtBegin,      \
                         const char* fmtEnd, charType value)           \
 {                                                                     \
+    (void) fmtBegin;                                                  \
     switch(*(fmtEnd-1))                                               \
     {                                                                 \
         case 'u': case 'd': case 'i': case 'o': case 'X': case 'x':   \
@@ -346,6 +348,7 @@ class FormatIterator
         static bool formatCStringTruncate(std::ostream& out, const T& value,
                                         std::streamsize truncLen)
         {
+            (void) out, (void) value, (void) truncLen;
             return false;
         }
 #       define TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE(type)            \
@@ -389,6 +392,8 @@ class FormatIterator
                         // for "%%", tack trailing % onto next literal section.
                         fmt = ++c;
                         break;
+                    default:
+                        continue;
                 }
             }
         }
@@ -556,6 +561,8 @@ inline const char* FormatIterator::streamStateFromFormat(std::ostream& out,
                 out.setf(std::ios::showpos);
                 extraFlags &= ~Flag_SpacePadPositive;
                 continue;
+            default:
+                break;
         }
         break;
     }
@@ -661,6 +668,8 @@ inline const char* FormatIterator::streamStateFromFormat(std::ostream& out,
             TINYFORMAT_ERROR("tinyformat: Conversion spec incorrectly "
                              "terminated by end of string");
             return c;
+        default:
+            break;
     }
     if(intConversion && precisionSet && !widthSet)
     {
@@ -822,10 +831,6 @@ void format(FormatIterator& fmtIter , const T1& v1, const T2& v2, const T3& v3, 
 // Note that TINYFORMAT_WRAP_EXTRA_ARGS cannot be a macro parameter because it
 // must expand to a comma separated list (or nothing, as used for printf below)
 
-#ifndef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
-#   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
-#endif
-
 /*[[[cog
 cog.outl(formatAsMacro(
 '''#define TINYFORMAT_WRAP_FORMAT(returnType, funcName, funcDeclSuffix,
@@ -983,7 +988,6 @@ void printf(const char* fmt, const Args&... args)
 
 // template<typename... Args>
 // void format(std::ostream& out, const char* fmt, const Args&... args)
-#undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 #define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS std::ostream& out,
 TINYFORMAT_WRAP_FORMAT(void, format, /*empty*/, /*empty*/, out, /*empty*/)
 #undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
