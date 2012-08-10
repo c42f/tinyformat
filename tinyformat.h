@@ -187,7 +187,7 @@ struct is_convertible
 template<typename T, typename fmtT, bool convertible = is_convertible<T, fmtT>::value>
 struct formatValueAsType
 {
-    static void invoke(std::ostream& out, const T& value) { assert(0); }
+    static void invoke(std::ostream& /*out*/, const T& /*value*/) { assert(0); }
 };
 // Specialized version for types that can actually be converted to fmtT, as
 // indicated by the "convertible" template parameter.
@@ -204,7 +204,7 @@ struct formatValueAsType<T,fmtT,true>
 template<typename T, bool convertible = is_convertible<T,int>::value>
 struct convertToInt
 {
-    static int invoke(const T& value)
+    static int invoke(const T& /*value*/)
     {
         TINYFORMAT_ERROR("tinyformat: Cannot convert from argument type to "
                          "integer for use as variable width or precision");
@@ -236,7 +236,7 @@ struct convertToInt<T,true>
 // operator<< to format the type T, with special cases for the %c and %p
 // conversions.
 template<typename T>
-inline void formatValue(std::ostream& out, const char* fmtBegin,
+inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,
                         const char* fmtEnd, const T& value)
 {
     // The mess here is to support the %c and %p conversions: if these
@@ -257,7 +257,7 @@ inline void formatValue(std::ostream& out, const char* fmtBegin,
 
 // Overloaded version for char types to support printing as an integer
 #define TINYFORMAT_DEFINE_FORMATVALUE_CHAR(charType)                  \
-inline void formatValue(std::ostream& out, const char* fmtBegin,      \
+inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,  \
                         const char* fmtEnd, charType value)           \
 {                                                                     \
     switch(*(fmtEnd-1))                                               \
@@ -285,17 +285,18 @@ class FormatIterator
         // Flags for features not representable with standard stream state
         enum ExtraFormatFlags
         {
+            Flag_None                = 0,
             Flag_TruncateToPrecision = 1<<0, // truncate length to stream precision()
             Flag_SpacePadPositive    = 1<<1, // pad positive values with spaces
             Flag_VariableWidth       = 1<<2, // variable field width in arg list
-            Flag_VariablePrecision   = 1<<3, // variable field precision in arg list
+            Flag_VariablePrecision   = 1<<3  // variable field precision in arg list
         };
 
         // out is the output stream, fmt is the full format string
         FormatIterator(std::ostream& out, const char* fmt)
             : m_out(out),
             m_fmt(fmt),
-            m_extraFlags(0),
+            m_extraFlags(Flag_None),
             m_wantWidth(false),
             m_wantPrecision(false),
             m_variableWidth(0),
@@ -343,8 +344,8 @@ class FormatIterator
         // stream.  Return true if formatting proceeded (generic version always
         // returns false)
         template<typename T>
-        static bool formatCStringTruncate(std::ostream& out, const T& value,
-                                        std::streamsize truncLen)
+        static bool formatCStringTruncate(std::ostream& /*out*/, const T& /*value*/,
+                                        std::streamsize /*truncLen*/)
         {
             return false;
         }
@@ -423,7 +424,7 @@ void FormatIterator::accept(const T& value)
 {
     // Parse the format string
     const char* fmtEnd = 0;
-    if(m_extraFlags == 0 && !m_wantWidth && !m_wantPrecision)
+    if(m_extraFlags == Flag_None && !m_wantWidth && !m_wantPrecision)
     {
         m_fmt = printFormatStringLiteral(m_out, m_fmt);
         fmtEnd = streamStateFromFormat(m_out, m_extraFlags, m_fmt, 0, 0);
@@ -489,7 +490,7 @@ void FormatIterator::accept(const T& value)
         else
             m_out << result;
     }
-    m_extraFlags = 0;
+    m_extraFlags = Flag_None;
     m_fmt = fmtEnd;
 }
 
@@ -521,7 +522,7 @@ inline const char* FormatIterator::streamStateFromFormat(std::ostream& out,
     out.unsetf(std::ios::adjustfield | std::ios::basefield |
                std::ios::floatfield | std::ios::showbase | std::ios::boolalpha |
                std::ios::showpoint | std::ios::showpos | std::ios::uppercase);
-    extraFlags = 0;
+    extraFlags = Flag_None;
     bool precisionSet = false;
     bool widthSet = false;
     const char* c = fmtStart + 1;
