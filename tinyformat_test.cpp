@@ -7,6 +7,7 @@ namespace std { class type_info; }
 #include <stdexcept>
 #include <climits>
 #include <cfloat>
+#include <cstddef>
 
 #ifdef SPEED_TEST
 #include <boost/format.hpp>
