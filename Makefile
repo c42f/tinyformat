@@ -3,6 +3,8 @@
 # Should work with recent versions of both gcc and clang.  (To compile with
 # clang use "make CXX=clang++".)
 
+CXXFLAGS?=-Wall
+
 test: tinyformat_test_cxx98 tinyformat_test_cxx0x
 	@echo running tests...
 	@./tinyformat_test_cxx98 && ./tinyformat_test_cxx0x && echo "No errors"
@@ -21,17 +23,17 @@ speed_test: tinyformat_speed_test
 	@time -p ./tinyformat_speed_test boost > /dev/null
 
 tinyformat_test_cxx98: tinyformat.h tinyformat_test.cpp
-	$(CXX) -Wall --std=c++98 -DTINYFORMAT_NO_VARIADIC_TEMPLATES tinyformat_test.cpp -o tinyformat_test_cxx98
+	$(CXX) $(CXXFLAGS) --std=c++98 -DTINYFORMAT_NO_VARIADIC_TEMPLATES tinyformat_test.cpp -o tinyformat_test_cxx98
 
 tinyformat_test_cxx0x: tinyformat.h tinyformat_test.cpp
-	$(CXX) -Wall --std=c++0x -DTINYFORMAT_USE_VARIADIC_TEMPLATES tinyformat_test.cpp -o tinyformat_test_cxx0x
+	$(CXX) $(CXXFLAGS) --std=c++0x -DTINYFORMAT_USE_VARIADIC_TEMPLATES tinyformat_test.cpp -o tinyformat_test_cxx0x
 
 tinyformat.html: README.rst
 	@echo building docs...
 	rst2html README.rst > tinyformat.html
 
 tinyformat_speed_test: tinyformat.h tinyformat_test.cpp
-	$(CXX) -Wall -O3 -DSPEED_TEST tinyformat_test.cpp -o tinyformat_speed_test
+	$(CXX) $(CXXFLAGS) -O3 -DSPEED_TEST tinyformat_test.cpp -o tinyformat_speed_test
 
 clean:
 	rm -f tinyformat_test_cxx98 tinyformat_test_cxx0x tinyformat_speed_test
