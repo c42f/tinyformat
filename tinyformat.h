@@ -419,7 +419,7 @@ class FormatIterator
 
 // Accept a value for formatting into the internal stream.
 template<typename T>
-TINYFORMAT_NOINLINE  //< greatly reduces bloat in optimized builds
+TINYFORMAT_NOINLINE  // < greatly reduces bloat in optimized builds
 void FormatIterator::accept(const T& value)
 {
     // Parse the format string
@@ -823,6 +823,7 @@ void format(FormatIterator& fmtIter , const T1& v1, const T2& v2, const T3& v3, 
 // Note that TINYFORMAT_WRAP_EXTRA_ARGS cannot be a macro parameter because it
 // must expand to a comma separated list (or nothing, as used for printf below)
 
+// Silly define to apparently prevent warnings on some version of gcc
 #ifndef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 #   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 #endif
