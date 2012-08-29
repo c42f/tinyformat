@@ -42,7 +42,8 @@ void compareSprintf(const Args&... args)
 
 #define EXPECT_ERROR(expression)                            \
 {                                                           \
-    try { expression; assert(0 && "expected exception"); }  \
+    try { expression; assert(0 && "expected exception in "  \
+                             #expression); }                \
     catch(std::runtime_error&) {}                           \
 }
 
@@ -178,6 +179,22 @@ int unitTests()
     EXPECT_ERROR(
         tfm::format("%0.*d", "thing that can't convert to int", 42)
     )
+
+    // Unhandled C99 format spec
+    EXPECT_ERROR(
+        tfm::format("%n", 10)
+    )
+    EXPECT_ERROR(
+        tfm::format("%a", 10)
+    )
+    EXPECT_ERROR(
+        tfm::format("%A", 10)
+    )
+
+#ifdef TEST_WCHAR_T_COMPILE
+    // Test wchar_t handling - should fail to compile!
+    tfm::format("%ls", L"blah");
+#endif
 
     // Test that formatting is independent of underlying stream state.
     std::ostringstream oss;

@@ -15,7 +15,6 @@ Design goals:
 * Simplicity and minimalism.  A single header file to include and distribute
   with your own projects.
 * Type safety and extensibility for user defined types.
-* Parse standard C99 format strings
 * Support as many commonly used C99 ``printf()`` features as practical without
   compromising on simplicity.
 * Use variadic templates with C++0x but provide good C++98 support for backward
@@ -180,8 +179,8 @@ Not all features of printf can be simulated simply using standard iostreams.
 Here's a list of known incompatibilities:
 
 * The C99 ``"%a"`` and ``"%A"`` hexadecimal floating point conversions are not
-  supported since the iostreams don't have the necessary flags.  These add no
-  extra flags to the stream state but do trigger a conversion.
+  supported since the iostreams don't have the necessary flags.  Using either
+  of these flags will result in a call to ``TINYFORMAT_ERROR``.
 * The precision for integer conversions cannot be supported by the iostreams
   state independently of the field width.  (Note: **this is only a
   problem for certain obscure integer conversions**; float conversions like
@@ -194,8 +193,14 @@ Here's a list of known incompatibilities:
   simple solution within the iostream model.
 * The ``"%n"`` query specifier isn't supported to keep things simple and will
   result in a call to ``TINYFORMAT_ERROR``.
-* Wide characters with the ``%ls`` conversion are not supported, though you
-  could write your own ``std::ostream`` insertion operator for ``wchar_t*``.
+* The ``"%ls"`` conversion is not supported, and attempting to format a
+  ``wchar_t`` array will cause a compile time error to minimise unexpected
+  surprises.  If you know the encoding of your wchar_t strings, you could write
+  your own ``std::ostream`` insertion operator for them, and disable the
+  compile time check by defining the macro ``TINYFORMAT_ALLOW_WCHAR_STRINGS``.
+  If you want to print the *address* of a wide character with the ``"%p"``
+  conversion, you should cast it to a ``void*`` before passing it to one of the
+  formatting functions.
 
 
 Error handling
@@ -343,7 +348,7 @@ Rationale
 
 Or, why did I reinvent this particularly well studied wheel?
 
-Nearly every program needs text formatting in some form but in most cases such
+Nearly every program needs text formatting in some form but in many cases such
 formatting is *incidental* to the main purpose of the program.  In these cases,
 you really want a library which is simple to use but as lightweight as
 possible.
@@ -372,12 +377,12 @@ which need to do only a little formatting.  Problems include
 1. Having many large source files.  This makes a heavy dependency unsuitable to
    bundle within other projects for convenience.
 2. Slow build times for every file using any sort of formatting (this is very
-   noticeable with boost/format.hpp. I'm not sure about the various other
-   alternatives.)
+   noticeable with g++ and boost/format.hpp. I'm not sure about the various
+   other alternatives.)
 3. Code bloat due to instantiating many templates
 
 Tinyformat tries to solve these problems while providing formatting which is
-sufficiently general for incidental day to day uses.
+sufficiently general and fast for incidental day to day uses.
 
 
 License

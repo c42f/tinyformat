@@ -182,6 +182,14 @@ struct is_convertible
 };
 
 
+// Detect when a type is not a wchar_t string
+template<typename T> struct is_wchar { typedef int tinyformat_wchar_is_not_supported; };
+template<> struct is_wchar<wchar_t*> {};
+template<> struct is_wchar<const wchar_t*> {};
+template<int n> struct is_wchar<const wchar_t[n]> {};
+template<int n> struct is_wchar<wchar_t[n]> {};
+
+
 // Format the value by casting to type fmtT.  This default implementation
 // should never be called.
 template<typename T, typename fmtT, bool convertible = is_convertible<T, fmtT>::value>
@@ -239,6 +247,11 @@ template<typename T>
 inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,
                         const char* fmtEnd, const T& value)
 {
+#ifndef TINYFORMAT_ALLOW_WCHAR_STRINGS
+    // Since we don't support printing of wchar_t using "%ls", make it fail at
+    // compile time in preference to printing as a void* at runtime.
+    typedef typename detail::is_wchar<T>::tinyformat_wchar_is_not_supported DummyType;
+#endif
     // The mess here is to support the %c and %p conversions: if these
     // conversions are active we try to convert the type to a char or const
     // void* respectively and format that instead of the value itself.  For the
@@ -644,7 +657,9 @@ inline const char* FormatIterator::streamStateFromFormat(std::ostream& out,
             out.flags(out.flags() & ~std::ios::floatfield);
             break;
         case 'a': case 'A':
-            break; // C99 hexadecimal floating point??  punt!
+            TINYFORMAT_ERROR("tinyformat: the %a and %A conversion specs "
+                             "are not supported");
+            break;
         case 'c':
             // Handled as special case inside formatValue()
             break;
