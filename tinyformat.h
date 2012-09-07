@@ -835,13 +835,9 @@ void format(FormatIterator& fmtIter , const T1& v1, const T2& v2, const T3& v3, 
 // users can choose not to write out the C++0x version if they're primarily
 // interested in C++98 support, but still have things work with C++0x.
 //
-// Note that TINYFORMAT_WRAP_EXTRA_ARGS cannot be a macro parameter because it
-// must expand to a comma separated list (or nothing, as used for printf below)
-
-// Silly define to apparently prevent warnings on some version of gcc
-#ifndef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
-#   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
-#endif
+// Note that TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS cannot be a macro parameter
+// because it must expand to a comma separated list (or nothing, as used for
+// printf below)
 
 /*[[[cog
 cog.outl(formatAsMacro(
@@ -994,13 +990,15 @@ void printf(const char* fmt, const Args&... args)
     format(std::cout, fmt, args...);
 }
 
+// Define for consistency with C++98 mode
+#define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
+
 #else
 
 // C++98 - define the convenience functions using the wrapping macros
 
 // template<typename... Args>
 // void format(std::ostream& out, const char* fmt, const Args&... args)
-#undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 #define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS std::ostream& out,
 TINYFORMAT_WRAP_FORMAT(void, format, /*empty*/, /*empty*/, out, /*empty*/)
 #undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
