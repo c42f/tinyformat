@@ -225,18 +225,20 @@ void speedTest(const std::string& which)
         // libc version
         for(long i = 0; i < maxIter; ++i)
             printf("%0.10f:%04d:%+g:%s:%p:%c:%%\n",
-                1.234, 42, 3.13, "str", (void*)1000, (int)'X');
+                   1.234, 42, 3.13, "str", (void*)1000, (int)'X');
     }
     else if(which == "iostreams")
     {
         // Std iostreams version.  What a mess!!
         for(long i = 0; i < maxIter; ++i)
-            std::cout << std::setprecision(10) << 1.234 << ":"
+            std::cout
+                << std::setprecision(10) << std::fixed << 1.234
+                << std::resetiosflags(std::ios::floatfield) << ":"
                 << std::setw(4) << std::setfill('0') << 42 << std::setfill(' ') << ":"
                 << std::setiosflags(std::ios::showpos) << 3.13 << std::resetiosflags(std::ios::showpos) << ":"
                 << "str" << ":"
                 << (void*)1000 << ":"
-                << (int)'X' << ":%\n";
+                << 'X' << ":%\n";
     }
     else if(which == "tinyformat")
     {
