@@ -37,7 +37,7 @@ tinyformat.html: README.rst
 	rst2html README.rst > tinyformat.html
 
 tinyformat_speed_test: tinyformat.h tinyformat_test.cpp
-	$(CXX) $(CXXFLAGS) -O3 -DSPEED_TEST tinyformat_test.cpp -o tinyformat_speed_test
+	$(CXX) $(CXXFLAGS) -O3 tinyformat_speed_test.cpp -o tinyformat_speed_test
 
 clean:
 	rm -f tinyformat_test_cxx98 tinyformat_test_cxx0x tinyformat_speed_test
