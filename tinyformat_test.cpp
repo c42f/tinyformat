@@ -129,6 +129,9 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%#x", 0x271828), "0x271828");
     CHECK_EQUAL(tfm::format("%#o", 0x271828), "011614050");
     CHECK_EQUAL(tfm::format("%#f", 3.0), "3.000000");
+    CHECK_EQUAL(tfm::format("%+d", 3), "+3");
+    CHECK_EQUAL(tfm::format("%+d", 0), "+0");
+    CHECK_EQUAL(tfm::format("%+d", -3), "-3");
     CHECK_EQUAL(tfm::format("%010d", 100), "0000000100");
     CHECK_EQUAL(tfm::format("%010d", -10), "-000000010"); // sign should extend
     CHECK_EQUAL(tfm::format("%#010X", 0xBEEF), "0X0000BEEF");

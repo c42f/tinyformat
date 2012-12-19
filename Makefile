@@ -11,7 +11,7 @@ test: tinyformat_test_cxx98 tinyformat_test_cxx0x
 		./tinyformat_test_cxx0x && \
 		! $(CXX) $(CXXFLAGS) --std=c++98 -DTINYFORMAT_NO_VARIADIC_TEMPLATES \
 		-DTEST_WCHAR_T_COMPILE tinyformat_test.cpp 2> /dev/null && \
-		echo "No errors"
+		echo "No errors" || echo "Tests failed"
 
 doc: tinyformat.html
 
