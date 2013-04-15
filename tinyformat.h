@@ -413,6 +413,10 @@ class FormatIterator
                                                  int variableWidth,
                                                  int variablePrecision);
 
+        // Private copy & assign: Kill gcc warnings with -Weffc++
+        FormatIterator(const FormatIterator&);
+        FormatIterator& operator=(const FormatIterator&);
+
         // Stream, current format string & state
         std::ostream& m_out;
         const char* m_fmt;
