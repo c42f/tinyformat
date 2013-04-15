@@ -26,17 +26,17 @@ speed_test: tinyformat_speed_test
 	@echo boost timings:
 	@time -p ./tinyformat_speed_test boost > /dev/null
 
-tinyformat_test_cxx98: tinyformat.h tinyformat_test.cpp
+tinyformat_test_cxx98: tinyformat.h tinyformat_test.cpp Makefile
 	$(CXX) $(CXXFLAGS) --std=c++98 -DTINYFORMAT_NO_VARIADIC_TEMPLATES tinyformat_test.cpp -o tinyformat_test_cxx98
 
-tinyformat_test_cxx0x: tinyformat.h tinyformat_test.cpp
+tinyformat_test_cxx0x: tinyformat.h tinyformat_test.cpp Makefile
 	$(CXX) $(CXXFLAGS) --std=c++0x -DTINYFORMAT_USE_VARIADIC_TEMPLATES tinyformat_test.cpp -o tinyformat_test_cxx0x
 
 tinyformat.html: README.rst
 	@echo building docs...
 	rst2html README.rst > tinyformat.html
 
-tinyformat_speed_test: tinyformat.h tinyformat_speed_test.cpp
+tinyformat_speed_test: tinyformat.h tinyformat_speed_test.cpp Makefile
 	$(CXX) $(CXXFLAGS) -O3 tinyformat_speed_test.cpp -o tinyformat_speed_test
 
 clean:
