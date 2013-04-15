@@ -294,6 +294,9 @@ namespace detail {
 // which arguments are formatted.
 class FormatIterator
 {
+    // FormatIterator contains a pointer so set the copy constructor private (prevent warning with gcc and -Weffc++)
+    FormatIterator(const FormatIterator&);
+    FormatIterator& operator=(const FormatIterator&);
     public:
         // Flags for features not representable with standard stream state
         enum ExtraFormatFlags
