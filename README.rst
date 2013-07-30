@@ -1,62 +1,63 @@
 ============
 tinyformat.h
 ============
-------------------------------------------------------
-A minimal type safe printf-replacement library for C++
-------------------------------------------------------
+----------------------------------------
+A minimal type safe printf() replacement
+----------------------------------------
 
-This library aims to support 95% of casual C++ string formatting needs with a
-single reasonably lightweight header file.  Anything you can do with this
-library can also be done with the standard C++ streams, but probably with
-considerably more typing :-)
+**tinyformat.h** is a type safe printf replacement library in a single C++
+header file.  If you've ever wanted ``printf("%s", s)`` to just work regardless
+of the type of ``s``, tinyformat might be for you.  Design goals include:
 
-Design goals:
-
-* Simplicity and minimalism.  A single header file to include and distribute
-  with your own projects.
 * Type safety and extensibility for user defined types.
-* Support as many commonly used C99 ``printf()`` features as practical without
-  compromising on simplicity.
-* Use variadic templates with C++0x but provide good C++98 support for backward
-  compatibility
+* C99 ``printf()`` compatibility, to the extent possible using ``std::ostream``
+* Simplicity and minimalism.  A single header file to include and distribute
+  with your projects.
+* Augment rather than replace the standard stream formatting mechanism
+* C++98 support, with optional C++11 niceties
 
 
 Example usage
 -------------
 
-To print the date, we might use::
+To print a date to ``std::cout``::
 
     std::string weekday = "Wednesday";
     const char* month = "July";
-    long day = 27;
-    int hour = 14;
+    size_t day = 27;
+    long hour = 14;
     int min = 44;
 
-    tfm::format(std::cout, "%s, %s %d, %.2d:%.2d\n",
+    tfm::printf("%s, %s %d, %.2d:%.2d\n", weekday, month, day, hour, min);
+
+The strange types here emphasize the type safety of the interface, for example
+it is possible to print a ``std::string`` using the ``"%s"`` conversion, and a
+``size_t`` using the ``"%d"`` conversion.  A similar result could be achieved
+using either of the ``tfm::format()`` functions.  One prints on a user provided
+stream::
+
+    tfm::format(std::cerr, "%s, %s %d, %.2d:%.2d\n",
                 weekday, month, day, hour, min);
 
-(The types here are intentionally odd to emphasize the type safety of the
-interface.  As shown, it is possible to print a ``std::string`` using the
-``"%s"`` conversion.) The same thing could be achieved using either of the two
-convenience functions.  One returns a ``std::string``::
+The other returns a ``std::string``::
 
     std::string date = tfm::format("%s, %s %d, %.2d:%.2d\n",
                                    weekday, month, day, hour, min);
     std::cout << date;
 
-The other prints to the ``std::cout`` stream::
 
-    tfm::printf("%s, %s %d, %.2d:%.2d\n", weekday, month, day, hour, min);
-
-Here's an example which further emphasizes the type safety; it will work with
-any type which has the usual stream insertion operator ``<<`` defined.  If not,
-it will fail at compile time::
+It is safe to use tinyformat inside a template function.  For any type which
+has the usual stream insertion ``operator<<`` defined, the following will work
+as desired::
 
     template<typename T>
     void myPrint(const T& value)
     {
-        tfm::printf("My value is %s\n", value);
+        tfm::printf("My value is '%s'\n", value);
     }
+
+(The above is a compile error for types ``T`` without a stream insertion
+operator.)
 
 
 Function reference
@@ -70,11 +71,11 @@ Three main interface functions are available: an iostreams-based ``format()``,
 a string-based ``format()`` and a ``printf()`` replacement.  These functions
 can be thought of as C++ replacements for C's ``fprintf()``, ``sprintf()`` and
 ``printf()`` functions respectively.  All the interface functions can take an
-unlimited number of input arguments if compiled with C++0x variadic templates
+unlimited number of input arguments if compiled with C++11 variadic templates
 support.  For C++98 compatibility, an in-source python code generator (using
 the excellent ``cog.py``; see http://nedbatchelder.com/code/cog/ ) has been
 used to generate multiple versions of the functions with up to 10 values of
-user-defined type.  This maximum can be customized by setting the ``maxParams``
+user-defined type.  This maximum can be customised by setting the ``maxParams``
 parameter in the code generator and regenerating the code using the command
 ``cog.py -r tinyformat.h``.
 
@@ -82,8 +83,7 @@ parameter in the code generator and regenerating the code using the command
 The ``format()`` function which takes a stream as the first argument is the
 main part of the tinyformat interface.  ``stream`` is the output stream,
 ``formatString`` is a format string in C99 ``printf()`` format, and the values
-to be formatted are a list of types ``T1, T2, ..., TN``, taken by const
-reference::
+to be formatted have arbitrary types::
 
     template<typename T1, typename T2, ...>
     void format(std::ostream& stream, const char* formatString,
@@ -139,11 +139,12 @@ After all these steps, tinyformat executes::
 
     outStream << yourType;
 
-and finally restores the stream flags, precision and fill.  What happens if
-``yourType`` isn't actually a floating point type?  In this case the flags set
-above are probably irrelevant and will be ignored by the underlying
-``std::ostream`` implementation.  The field width of six may cause some padding
-in the output of ``yourType``, but that's about it.
+and finally restores the stream flags, precision and fill.
+
+What happens if ``yourType`` isn't actually a floating point type?  In this
+case the flags set above are probably irrelevant and will be ignored by the
+underlying ``std::ostream`` implementation.  The field width of six may cause
+some padding in the output of ``yourType``, but that's about it.
 
 
 Special cases for "%p", "%c" and "%s"
@@ -157,7 +158,7 @@ the "%p" and "%c" conversions require special rules for robustness.  Consider::
 
 Clearly the intention here is to print a representation of the *pointer* to
 ``pixels``, but since ``uint8_t`` is a character type the compiler would
-attempt to print it as a string if we blindly fed it into ``operator<<``.  To
+attempt to print it as a C string if we blindly fed it into ``operator<<``.  To
 counter this kind of madness, tinyformat tries to static_cast any type fed to
 the "%p" conversion into a ``const void*`` before printing.  If this can't be
 done at compile time the library falls back to using ``operator<<`` as usual.
@@ -229,7 +230,7 @@ Wrapping tfm::format() inside a user defined format function
 ------------------------------------------------------------
 
 Suppose you wanted to define your own function which wraps ``tfm::format``.
-For example, consider an error function taking an error code, which in C++0x
+For example, consider an error function taking an error code, which in C++11
 might be written simply as::
 
     template<typename... Args>
@@ -260,13 +261,16 @@ Here's what the usage looks like in the case above::
     #define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 
 This defines an overloaded set of ``error()`` functions which act like
-the C++0x definition given above, at least up until ``maxPararms`` format
+the C++11 definition given above, at least up until ``maxPararms`` format
 parameters.  Note that the content of ``TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS``
 is defined to be empty by default for convenience.  In this case we must
 redefine it since we want an extra ``code`` argument.  It's important to note
 that this macro *must contain a trailing comma for every extra argument* and
 therefore can't be a normal macro parameter to ``TINYFORMAT_WRAP_FORMAT`` (the
 commas would look like more than one macro argument to the preprocessor).
+
+The author apologises for this abomination!  Unfortunately something like this
+seems to be necessary until C++11 variadic template are widely supported.
 
 
 Benchmarks
@@ -394,8 +398,8 @@ all source copies, but don't have to mention tinyformat when distributing
 binaries.)
 
 
-Author and acknowledgments
---------------------------
+Author and acknowledgements
+---------------------------
 
 Tinyformat was written by Chris Foster [chris42f (at) gmail (d0t) com].  The
 implementation owes much to ``boost::format`` for showing that it's fairly

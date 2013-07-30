@@ -26,70 +26,53 @@
 // DEALINGS IN THE SOFTWARE.
 
 //------------------------------------------------------------------------------
-// Tinyformat: A minimal type safe printf-replacement library for C++
+// Tinyformat: A minimal type safe printf replacement
 //
-// This library aims to support 95% of casual C++ string formatting needs with
-// a single lightweight header file.  Anything you can do with this library
-// can also be done with the standard C++ streams, but probably with
-// considerably more typing :)
+// tinyformat.h is a type safe printf replacement library in a single C++
+// header file.  Design goals include:
 //
-// Design goals:
-//
-// * Simplicity and minimalism.  A single header file to include and distribute
-//   with your own projects.
 // * Type safety and extensibility for user defined types.
-// * Parse standard C99 format strings, and support most features.
-// * Support as many commonly used ``printf()`` features as practical without
-//   compromising on simplicity.
+// * C99 printf() compatibility, to the extent possible using std::ostream
+// * Simplicity and minimalism.  A single header file to include and distribute
+//   with your projects.
+// * Augment rather than replace the standard stream formatting mechanism
+// * C++98 support, with optional C++11 niceties
 //
 //
 // Example usage
 // -------------
 //
-// To print the date, we might have
+// To print a date to std::cout:
 //
-// std::string weekday = "Wednesday";
-// const char* month = "July";
-// long day = 27;
-// int hour = 14;
-// int min = 44;
+//   std::string weekday = "Wednesday";
+//   const char* month = "July";
+//   size_t day = 27;
+//   long hour = 14;
+//   int min = 44;
 //
-// tfm::format(std::cout, "%s, %s %d, %.2d:%.2d\n",
-//             weekday, month, day, hour, min);
+//   tfm::printf("%s, %s %d, %.2d:%.2d\n", weekday, month, day, hour, min);
 //
-// (The types here are intentionally odd to emphasize the type safety of the
-// interface.)  The same thing could be achieved using either of the two
-// convenience functions.  One returns a std::string:
+// The strange types here emphasize the type safety of the interface; it is
+// possible to print a std::string using the "%s" conversion, and a
+// size_t using the "%d" conversion.  A similar result could be achieved
+// using either of the tfm::format() functions.  One prints on a user provided
+// stream:
 //
-// std::string date = tfm::format("%s, %s %d, %.2d:%.2d\n",
-//                                weekday, month, day, hour, min);
-// std::cout << date;
+//   tfm::format(std::cerr, "%s, %s %d, %.2d:%.2d\n",
+//               weekday, month, day, hour, min);
 //
-// The other prints to the std::cout stream:
+// The other returns a std::string:
 //
-// tfm::printf("%s, %s %d, %.2d:%.2d\n", weekday, month, day, hour, min);
+//   std::string date = tfm::format("%s, %s %d, %.2d:%.2d\n",
+//                                  weekday, month, day, hour, min);
+//   std::cout << date;
 //
-//
-// Brief outline of functionality
-// ------------------------------
-//
-// (For full docs, see the accompanying README)
+// These are the three primary interface functions.
 //
 //
-// Interface functions:
-//
-//  template<typename T1, typename T2, ...>
-//  void format(std::ostream& stream, const char* formatString,
-//              const T1& value1, const T2& value1, ...)
-//
-//  template<typename T1, typename T2, ...>
-//  std::string format(const char* formatString,
-//                     const T1& value1, const T2& value1, ...)
-//
-//  template<typename T1, typename T2, ...>
-//  void printf(const char* formatString,
-//              const T1& value1, const T2& value1, ...)
-//
+// Additional API information
+// --------------------------
+// (For more complete documentation, see the accompanying README.)
 //
 // Error handling: Define TINYFORMAT_ERROR to customize the error handling for
 // format strings which are unsupported or have the wrong number of format
@@ -116,8 +99,8 @@ namespace tfm = tinyformat;
 // Error handling; calls assert() by default.
 // #define TINYFORMAT_ERROR(reasonString) your_error_handler(reasonString)
 
-// Define for C++0x variadic templates which make the code shorter & more
-// general.  If you don't define this, C++0x support is autodetected below.
+// Define for C++11 variadic templates which make the code shorter & more
+// general.  If you don't define this, C++11 support is autodetected below.
 // #define TINYFORMAT_USE_VARIADIC_TEMPLATES
 
 
@@ -737,7 +720,7 @@ inline void format(FormatIterator& fmtIter)
 // There's two cases here: c++0x and c++98.
 #ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
 
-// First, the simple definition for C++0x:
+// First, the simple definition for C++11:
 template<typename T1, typename... Args>
 void format(FormatIterator& fmtIter, const T1& value1, const Args&... args)
 {
@@ -863,9 +846,9 @@ void format(FormatIterator& fmtIter , const T1& v1, const T2& v2, const T3& v3, 
 // Define the macro TINYFORMAT_WRAP_FORMAT, which can be used to wrap a call
 // to tfm::format for C++98 support.
 //
-// We make this available in both C++0x and C++98 mode for convenience so that
-// users can choose not to write out the C++0x version if they're primarily
-// interested in C++98 support, but still have things work with C++0x.
+// We make this available in both C++11 and C++98 mode for convenience so that
+// users can choose not to write out the C++11 version if they're primarily
+// interested in C++98 support, but still have things work with C++11.
 //
 // Note that TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS cannot be a macro parameter
 // because it must expand to a comma separated list (or nothing, as used for
@@ -1000,7 +983,7 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
 // Again, there's two cases.
 #ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
 
-// C++0x - the simple case
+// C++11 - the simple case
 template<typename... Args>
 void format(std::ostream& out, const char* fmt, const Args&... args)
 {
