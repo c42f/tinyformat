@@ -145,6 +145,11 @@ namespace tfm = tinyformat;
 #   define TINYFORMAT_NOINLINE
 #endif
 
+#if defined(__GLIBCXX__) && __GLIBCXX__ < 20080201
+//  std::showpos is broken on old libstdc++ as provided with OSX.  See
+//  http://gcc.gnu.org/ml/libstdc++/2007-11/msg00075.html
+#   define TINYFORMAT_OLD_LIBSTDCPLUSPLUS_WORKAROUND
+#endif
 
 namespace tinyformat {
 
@@ -206,6 +211,26 @@ struct formatValueAsType<T,fmtT,true>
         { out << static_cast<fmtT>(value); }
 };
 
+#ifdef TINYFORMAT_OLD_LIBSTDCPLUSPLUS_WORKAROUND
+template<typename T, bool convertible = is_convertible<T, int>::value>
+struct formatZeroIntegerWorkaround
+{
+    static bool invoke(std::ostream& /**/, const T& /**/) { return false; }
+};
+template<typename T>
+struct formatZeroIntegerWorkaround<T,true>
+{
+    static bool invoke(std::ostream& out, const T& value)
+    {
+        if (static_cast<int>(value) == 0 && out.flags() & std::ios::showpos)
+        {
+            out << "+0";
+            return true;
+        }
+        return false;
+    }
+};
+#endif // TINYFORMAT_OLD_LIBSTDCPLUSPLUS_WORKAROUND
 
 // Convert an arbitrary type to integer.  The version with convertible=false
 // throws an error.
@@ -263,6 +288,9 @@ inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,
         detail::formatValueAsType<T, char>::invoke(out, value);
     else if(canConvertToVoidPtr && *(fmtEnd-1) == 'p')
         detail::formatValueAsType<T, const void*>::invoke(out, value);
+#ifdef TINYFORMAT_OLD_LIBSTDCPLUSPLUS_WORKAROUND
+    else if(detail::formatZeroIntegerWorkaround<T>::invoke(out, value)) /**/;
+#endif
     else
         out << value;
 }
