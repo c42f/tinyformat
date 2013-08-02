@@ -737,7 +737,7 @@ void format(FormatIterator& fmtIter, const T1& value1, const Args&... args)
 
 /*[[[cog
 
-maxParams = 10
+maxParams = 12
 
 # prepend a comma if the string isn't empty.
 def prependComma(str):
@@ -834,6 +834,18 @@ void format(FormatIterator& fmtIter , const T1& v1, const T2& v2, const T3& v3, 
 {
     fmtIter.accept(v1);
     format(fmtIter, v2, v3, v4, v5, v6, v7, v8, v9, v10);
+}
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
+void format(FormatIterator& fmtIter , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11)
+{
+    fmtIter.accept(v1);
+    format(fmtIter, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11);
+}
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
+void format(FormatIterator& fmtIter , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12)
+{
+    fmtIter.accept(v1);
+    format(fmtIter, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12);
 }
 //[[[end]]]
 
@@ -971,6 +983,24 @@ returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
     bodyPrefix                                                             \
     tinyformat::detail::FormatIterator fmtIter(streamName, fmt);           \
     tinyformat::detail::format(fmtIter, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10); \
+    bodySuffix                                                             \
+}                                                                          \
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11> \
+returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
+                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11) funcDeclSuffix \
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::detail::FormatIterator fmtIter(streamName, fmt);           \
+    tinyformat::detail::format(fmtIter, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11); \
+    bodySuffix                                                             \
+}                                                                          \
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12> \
+returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
+                    , const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12) funcDeclSuffix \
+{                                                                          \
+    bodyPrefix                                                             \
+    tinyformat::detail::FormatIterator fmtIter(streamName, fmt);           \
+    tinyformat::detail::format(fmtIter, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12); \
     bodySuffix                                                             \
 }                                                                          \
 
