@@ -4,12 +4,13 @@
 # clang use "make CXX=clang++".)
 
 CXXFLAGS?=-Wall
+CXX11FLAGS?=-std=c++0x
 
-test: tinyformat_test_cxx98 tinyformat_test_cxx0x
+test: tinyformat_test_cxx98 tinyformat_test_cxx11
 	@echo running tests...
 	@./tinyformat_test_cxx98 && \
-		./tinyformat_test_cxx0x && \
-		! $(CXX) $(CXXFLAGS) --std=c++98 -DTINYFORMAT_NO_VARIADIC_TEMPLATES \
+		./tinyformat_test_cxx11 && \
+		! $(CXX) $(CXXFLAGS) -std=c++98 -DTINYFORMAT_NO_VARIADIC_TEMPLATES \
 		-DTEST_WCHAR_T_COMPILE tinyformat_test.cpp 2> /dev/null && \
 		echo "No errors" || echo "Tests failed"
 
@@ -27,10 +28,10 @@ speed_test: tinyformat_speed_test
 	@time -p ./tinyformat_speed_test boost > /dev/null
 
 tinyformat_test_cxx98: tinyformat.h tinyformat_test.cpp Makefile
-	$(CXX) $(CXXFLAGS) --std=c++98 -DTINYFORMAT_NO_VARIADIC_TEMPLATES tinyformat_test.cpp -o tinyformat_test_cxx98
+	$(CXX) $(CXXFLAGS) -std=c++98 -DTINYFORMAT_NO_VARIADIC_TEMPLATES tinyformat_test.cpp -o tinyformat_test_cxx98
 
-tinyformat_test_cxx0x: tinyformat.h tinyformat_test.cpp Makefile
-	$(CXX) $(CXXFLAGS) --std=c++0x -DTINYFORMAT_USE_VARIADIC_TEMPLATES tinyformat_test.cpp -o tinyformat_test_cxx0x
+tinyformat_test_cxx11: tinyformat.h tinyformat_test.cpp Makefile
+	$(CXX) $(CXXFLAGS) $(CXX11FLAGS) -DTINYFORMAT_USE_VARIADIC_TEMPLATES tinyformat_test.cpp -o tinyformat_test_cxx11
 
 tinyformat.html: README.rst
 	@echo building docs...
@@ -40,6 +41,6 @@ tinyformat_speed_test: tinyformat.h tinyformat_speed_test.cpp Makefile
 	$(CXX) $(CXXFLAGS) -O3 tinyformat_speed_test.cpp -o tinyformat_speed_test
 
 clean:
-	rm -f tinyformat_test_cxx98 tinyformat_test_cxx0x tinyformat_speed_test
+	rm -f tinyformat_test_cxx98 tinyformat_test_cxx11 tinyformat_speed_test
 	rm -f tinyformat.html
 	rm -f _bloat_test_tmp_*
