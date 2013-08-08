@@ -72,12 +72,12 @@ a string-based ``format()`` and a ``printf()`` replacement.  These functions
 can be thought of as C++ replacements for C's ``fprintf()``, ``sprintf()`` and
 ``printf()`` functions respectively.  All the interface functions can take an
 unlimited number of input arguments if compiled with C++11 variadic templates
-support.  For C++98 compatibility, an in-source python code generator (using
-the excellent ``cog.py``; see http://nedbatchelder.com/code/cog/ ) has been
-used to generate multiple versions of the functions with up to 10 values of
-user-defined type.  This maximum can be customised by setting the ``maxParams``
-parameter in the code generator and regenerating the code using the command
-``cog.py -r tinyformat.h``.
+support.  In C++98 mode, the number of arguments must be limited to some fixed
+upper bound which is currently 16 (as of version 1.3).  Generating the code to
+support more arguments is quite easy using the in-source code generator based
+on the excellent code generation script ``cog.py``
+(http://nedbatchelder.com/code/cog):  Set the ``maxParams`` parameter in the
+code generator and rerun cog using ``cog.py -r tinyformat.h``.
 
 
 The ``format()`` function which takes a stream as the first argument is the
@@ -240,37 +240,34 @@ might be written simply as::
         tfm::format(std::cerr, fmt, args...);
     }
 
-Unfortunately it's rather painful to do this with C++98, because you must
-write a version of ``error()`` for every number of arguments you want to
-support.  However, tinyformat provides a macro ``TINYFORMAT_WRAP_FORMAT`` to
-do this for you in a handy range of cases.  (In fact, this is the way that the
-convenience functions ``format()`` and ``printf()`` are defined internally.)
-Here's what the usage looks like in the case above::
+Simulating this functionality in C++98 is pretty painful since it requires
+writing out a version of ``error()`` for each desired number of arguments.  To
+make this bearable tinyformat comes with a set of macros which are used
+internally to generate the API, but which may also be used in user code.
 
-    #undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
-    #define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS int code,
-    TINYFORMAT_WRAP_FORMAT(
-        void,                                        /* return type */
-        error,                                       /* function name */
-        /*empty*/,                                   /* function declaration suffix (eg, const) */
-        std::cerr << "error (code " << code << ")";, /* stuff before format()*/
-        std::cerr,                                   /* stream name */
-        /*empty*/                                    /* stuff after format() */
-    )
-    #undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
-    #define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
+The three macros ``TINYFORMAT_ARGTYPES(n)``, ``TINYFORMAT_VARARGS(n)`` and
+``TINYFORMAT_PASSARGS(n)`` will generate a list of ``n`` argument types,
+type/name pairs and argument names respectively when called with an integer
+``n`` between 1 and 16.  We can use these to define a macro which generates the
+desired user defined function with ``n`` arguments::
 
-This defines an overloaded set of ``error()`` functions which act like
-the C++11 definition given above, at least up until ``maxPararms`` format
-parameters.  Note that the content of ``TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS``
-is defined to be empty by default for convenience.  In this case we must
-redefine it since we want an extra ``code`` argument.  It's important to note
-that this macro *must contain a trailing comma for every extra argument* and
-therefore can't be a normal macro parameter to ``TINYFORMAT_WRAP_FORMAT`` (the
-commas would look like more than one macro argument to the preprocessor).
+    #define MAKE_ERROR_FUNC(n)                                    \
+    template<TINYFORMAT_ARGTYPES(n)>                              \
+    void error(int code, const char* fmt, TINYFORMAT_VARARGS(n))  \
+    {                                                             \
+        std::cerr << "error (code " << code << ")";               \
+        tfm::format(std::cerr, fmt, TINYFORMAT_PASSARGS(n));      \
+    }
 
-The author apologises for this abomination!  Unfortunately something like this
-seems to be necessary until C++11 variadic template are widely supported.
+To generate all the desired function bodies we just need to call this macro
+for each ``n`` in the desired range of argument numbers.  Tinyformat provides a
+convenient macro to do this for you for all supported ``n``::
+
+    TINYFORMAT_FOREACH_ARGNUM(MAKE_ERROR_FUNC)
+
+Note that in version 1.2 and below, wrapping was done using a more limited and
+unreadable macro TINYFORMAT_WRAP_FORMAT.  This still exists but has been
+deprecated and will be removed in version 2.
 
 
 Benchmarks

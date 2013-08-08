@@ -54,6 +54,25 @@ if(!((a) == (b)))                                          \
 struct TestWrap
 {
     std::ostringstream m_oss;
+    // template<typename... Args>
+    // std::string error(int code, const char* fmt, const Args&... args);
+#   define MAKE_ERROR_FUNC(n)                                            \
+    template<TINYFORMAT_ARGTYPES(n)>                                     \
+    std::string error(int code, const char* fmt, TINYFORMAT_VARARGS(n))  \
+    {                                                                    \
+        m_oss.clear();                                                   \
+        m_oss << code << ": ";                                           \
+        tfm::format(m_oss, fmt, TINYFORMAT_PASSARGS(n));                 \
+        return m_oss.str();                                              \
+    }
+    TINYFORMAT_FOREACH_ARGNUM(MAKE_ERROR_FUNC)
+};
+
+
+// Test deprecated wrapper macro.  Will be removed!
+struct TestWrapOld
+{
+    std::ostringstream m_oss;
 #   undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 #   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS int code,
     // std::string error(int code, const char* fmt, const Args&... args);
@@ -63,6 +82,17 @@ struct TestWrap
                            return m_oss.str();)
 #   undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 #   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
+};
+
+
+struct TestExceptionDef : public std::runtime_error
+{
+#   define MAKE_CONSTRUCTOR(n)                                          \
+    template<TINYFORMAT_ARGTYPES(n)>                                    \
+    TestExceptionDef(const char* fmt, TINYFORMAT_VARARGS(n))            \
+        : std::runtime_error(tfm::format(fmt, TINYFORMAT_PASSARGS(n)))  \
+    { }
+    TINYFORMAT_FOREACH_ARGNUM(MAKE_CONSTRUCTOR)
 };
 
 
@@ -162,7 +192,7 @@ int unitTests()
         tfm::format("%d", 5, 10)
     )
     EXPECT_ERROR(
-        tfm::format("%d")
+        tfm::format("%d %d", 1)
     )
     // Unterminated format spec
     EXPECT_ERROR(
@@ -205,6 +235,12 @@ int unitTests()
     TestWrap wrap;
     assert(wrap.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
            "10: someformat asdf:2:4");
+    TestWrapOld wrapOld;
+    assert(wrapOld.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
+           "10: someformat asdf:2:4");
+
+    TestExceptionDef ex("blah %d", 100);
+    assert(ex.what() == std::string("blah 100"));
     return nfailed;
 }
 
