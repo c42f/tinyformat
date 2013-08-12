@@ -841,13 +841,19 @@ inline const char* FormatIterator::streamStateFromFormat(std::ostream& out,
 
 
 //------------------------------------------------------------------------------
-// Private format function on top of which the public interface is implemented
-inline void format(FormatIterator& fmtIter)
+// Private format function on top of which the public interface is implemented.
+// We enforce a mimimum of one value to be formatted to prevent bugs looking like
+//
+//   const char* myStr = "100% broken";
+//   printf(myStr);   // Parses % as a format specifier
+#ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
+
+template<typename T1>
+void format(FormatIterator& fmtIter, const T1& value1)
 {
+    fmtIter.accept(value1);
     fmtIter.finish();
 }
-
-#ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
 
 // General version for C++11
 template<typename T1, typename... Args>
@@ -858,6 +864,11 @@ void format(FormatIterator& fmtIter, const T1& value1, const Args&... args)
 }
 
 #else
+
+inline void format(FormatIterator& fmtIter)
+{
+    fmtIter.finish();
+}
 
 // General version for C++98
 #define TINYFORMAT_MAKE_FORMAT_DETAIL(n)                                  \
@@ -882,25 +893,25 @@ TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_FORMAT_DETAIL)
 #ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
 
 // C++11 - the simple case
-template<typename... Args>
-void format(std::ostream& out, const char* fmt, const Args&... args)
+template<typename T1, typename... Args>
+void format(std::ostream& out, const char* fmt, const T1& v1, const Args&... args)
 {
     detail::FormatIterator fmtIter(out, fmt);
-    format(fmtIter, args...);
+    format(fmtIter, v1, args...);
 }
 
-template<typename... Args>
-std::string format(const char* fmt, const Args&... args)
+template<typename T1, typename... Args>
+std::string format(const char* fmt, const T1& v1, const Args&... args)
 {
     std::ostringstream oss;
-    format(oss, fmt, args...);
+    format(oss, fmt, v1, args...);
     return oss.str();
 }
 
-template<typename... Args>
-void printf(const char* fmt, const Args&... args)
+template<typename T1, typename... Args>
+void printf(const char* fmt, const T1& v1, const Args&... args)
 {
-    format(std::cout, fmt, args...);
+    format(std::cout, fmt, v1, args...);
 }
 
 #else

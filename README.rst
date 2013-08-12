@@ -79,6 +79,12 @@ on the excellent code generation script ``cog.py``
 (http://nedbatchelder.com/code/cog):  Set the ``maxParams`` parameter in the
 code generator and rerun cog using ``cog.py -r tinyformat.h``.
 
+It's usually a bad idea to print string literals directly as the format string,
+since the literal may contain errant ``%`` symbols and these would trigger an
+unwanted conversion.  All three interface functions enforce a minimum of one
+value to be formatted to prevent this kind of bug.  Thus, you must replace
+``tfm::printf(myStr)`` with ``tfm::printf("%s", myStr)`` to avoid a compile
+error.
 
 The ``format()`` function which takes a stream as the first argument is the
 main part of the tinyformat interface.  ``stream`` is the output stream,
