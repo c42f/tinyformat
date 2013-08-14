@@ -73,11 +73,32 @@ can be thought of as C++ replacements for C's ``fprintf()``, ``sprintf()`` and
 ``printf()`` functions respectively.  All the interface functions can take an
 unlimited number of input arguments if compiled with C++11 variadic templates
 support.  In C++98 mode, the number of arguments must be limited to some fixed
-upper bound which is currently 16 (as of version 1.3).  Generating the code to
-support more arguments is quite easy using the in-source code generator based
-on the excellent code generation script ``cog.py``
-(http://nedbatchelder.com/code/cog):  Set the ``maxParams`` parameter in the
-code generator and rerun cog using ``cog.py -r tinyformat.h``.
+upper bound which is currently 16 as of version 1.3 [#]_.
+
+The ``format()`` function which takes a stream as the first argument is the
+main part of the tinyformat interface.  ``stream`` is the output stream,
+``formatString`` is a format string in C99 ``printf()`` format, and the values
+to be formatted have arbitrary types::
+
+    template<typename T1, typename... Args>
+    void format(std::ostream& stream, const char* formatString,
+                const T1& value1, const Args&... args);
+
+The second version of ``format()`` is a convenience function which returns a
+``std::string`` rather than printing onto a stream.  This function simply
+calls the main version of ``format()`` using a ``std::ostringstream``, and
+returns the resulting string::
+
+    template<typename T1, typename... Args>
+    std::string format(const char* formatString,
+                       const T1& value1, const Args&... args);
+
+Finally, ``printf()`` is a convenience function which calls ``format()`` with
+``std::cout`` as the first argument::
+
+    template<typename T1, typename... Args>
+    void printf(const char* formatString,
+                const T1& value1, const Args&... args);
 
 It's usually a bad idea to print string literals directly as the format string,
 since the literal may contain errant ``%`` symbols and these would trigger an
@@ -86,33 +107,13 @@ value to be formatted to prevent this kind of bug.  Thus, you must replace
 ``tfm::printf(myStr)`` with ``tfm::printf("%s", myStr)`` to avoid a compile
 error.
 
-The ``format()`` function which takes a stream as the first argument is the
-main part of the tinyformat interface.  ``stream`` is the output stream,
-``formatString`` is a format string in C99 ``printf()`` format, and the values
-to be formatted have arbitrary types::
 
-    template<typename T1, typename T2, ...>
-    void format(std::ostream& stream, const char* formatString,
-                const T1& value1, const T2& value1, ...)
-
-
-The second version of ``format()`` is a convenience function which returns a
-``std::string`` rather than printing onto a stream.  This function simply
-calls the main version of ``format()`` using a ``std::ostringstream``, and
-returns the resulting string::
-
-    template<typename T1, typename T2, ...>
-    std::string format(const char* formatString,
-                       const T1& value1, const T2& value1, ...)
-
-
-Finally, ``printf()`` is a convenience function which calls ``format()`` with
-``std::cout`` as the first argument::
-
-    template<typename T1, typename T2, ...>
-    void printf(const char* formatString,
-                const T1& value1, const T2& value1, ...)
-
+.. [#] Generating the code to support more arguments is quite easy using the
+  in-source code generator based on the excellent code generation script
+  ``cog.py`` (http://nedbatchelder.com/code/cog):  Set the ``maxParams``
+  parameter in the code generator and rerun cog using
+  ``cog.py -r tinyformat.h``.  Alternatively, it should be quite easy to simply
+  add extra versions of the associated macros by hand.
 
 Format strings and type safety
 ------------------------------
