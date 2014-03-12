@@ -843,20 +843,13 @@ inline const char* FormatIterator::streamStateFromFormat(std::ostream& out,
 
 //------------------------------------------------------------------------------
 // Private format function on top of which the public interface is implemented.
-// We enforce a mimimum of one value to be formatted to prevent bugs looking like
-//
-//   const char* myStr = "100% broken";
-//   printf(myStr);   // Parses % as a format specifier
-#ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
-
-template<typename T1>
-void format(FormatIterator& fmtIter, const T1& value1)
+inline void format(FormatIterator& fmtIter)
 {
-    fmtIter.accept(value1);
     fmtIter.finish();
 }
 
-// General version for C++11
+#ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
+
 template<typename T1, typename... Args>
 void format(FormatIterator& fmtIter, const T1& value1, const Args&... args)
 {
@@ -866,12 +859,6 @@ void format(FormatIterator& fmtIter, const T1& value1, const Args&... args)
 
 #else
 
-inline void format(FormatIterator& fmtIter)
-{
-    fmtIter.finish();
-}
-
-// General version for C++98
 #define TINYFORMAT_MAKE_FORMAT_DETAIL(n)                                  \
 template<TINYFORMAT_ARGTYPES(n)>                                          \
 void format(detail::FormatIterator& fmtIter, TINYFORMAT_VARARGS(n))       \
@@ -883,7 +870,7 @@ void format(detail::FormatIterator& fmtIter, TINYFORMAT_VARARGS(n))       \
 TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_FORMAT_DETAIL)
 #undef TINYFORMAT_MAKE_FORMAT_DETAIL
 
-#endif // End C++98 variadic template emulation for format()
+#endif
 
 } // namespace detail
 
@@ -892,32 +879,51 @@ TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_FORMAT_DETAIL)
 // Implement all the main interface functions here in terms of detail::format()
 
 #ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
+// C++11
 
-// C++11 - the simple case
-template<typename T1, typename... Args>
-void format(std::ostream& out, const char* fmt, const T1& v1, const Args&... args)
+template<typename... Args>
+void format(std::ostream& out, const char* fmt, const Args&... args)
 {
     detail::FormatIterator fmtIter(out, fmt);
-    format(fmtIter, v1, args...);
+    format(fmtIter, args...);
 }
 
-template<typename T1, typename... Args>
-std::string format(const char* fmt, const T1& v1, const Args&... args)
+template<typename... Args>
+std::string format(const char* fmt, const Args&... args)
 {
     std::ostringstream oss;
-    format(oss, fmt, v1, args...);
+    format(oss, fmt, args...);
     return oss.str();
 }
 
-template<typename T1, typename... Args>
-void printf(const char* fmt, const T1& v1, const Args&... args)
+template<typename... Args>
+void printf(const char* fmt, const Args&... args)
 {
-    format(std::cout, fmt, v1, args...);
+    format(std::cout, fmt, args...);
 }
 
 #else
 
-// C++98 - define the interface functions using the wrapping macros
+// C++98 - define the interface functions using the wrapping macros + special
+// cases for the 0-argument cases.
+inline void format(std::ostream& out, const char* fmt)
+{
+    detail::FormatIterator fmtIter(out, fmt);
+    format(fmtIter);
+}
+
+inline std::string format(const char* fmt)
+{
+    std::ostringstream oss;
+    format(oss, fmt);
+    return oss.str();
+}
+
+inline void printf(const char* fmt)
+{
+    format(std::cout, fmt);
+}
+
 #define TINYFORMAT_MAKE_FORMAT_FUNCS(n)                                   \
                                                                           \
 template<TINYFORMAT_ARGTYPES(n)>                                          \

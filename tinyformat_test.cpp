@@ -179,6 +179,9 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%td", (ptrdiff_t)100000), "100000");
     CHECK_EQUAL(tfm::format("%jd", 100000), "100000");
 
+    // Check that 0-argument formatting is printf-compatible
+    CHECK_EQUAL(tfm::format("100%%"), "100%");
+
     // printf incompatibilities:
     // compareSprintf("%6.4x", 10); // precision & width can't be supported independently
     // compareSprintf("%.4d", -10); // negative numbers + precision don't quite work.

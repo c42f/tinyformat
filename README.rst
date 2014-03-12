@@ -100,14 +100,6 @@ Finally, ``printf()`` is a convenience function which calls ``format()`` with
     void printf(const char* formatString,
                 const T1& value1, const Args&... args);
 
-It's usually a bad idea to print string literals directly as the format string,
-since the literal may contain errant ``%`` symbols and these would trigger an
-unwanted conversion.  All three interface functions enforce a minimum of one
-value to be formatted to prevent this kind of bug.  Thus, you must replace
-``tfm::printf(myStr)`` with ``tfm::printf("%s", myStr)`` to avoid a compile
-error.
-
-
 .. [#] Generating the code to support more arguments is quite easy using the
   in-source code generator based on the excellent code generation script
   ``cog.py`` (http://nedbatchelder.com/code/cog):  Set the ``maxParams``
