@@ -955,49 +955,6 @@ TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_FORMAT_FUNCS)
 #endif
 
 
-//------------------------------------------------------------------------------
-// Define deprecated wrapping macro for backward compatibility in tinyformat
-// 1.x.  Will be removed in version 2!
-#define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
-#define TINYFORMAT_WRAP_FORMAT_N(n, returnType, funcName, funcDeclSuffix,  \
-                                 bodyPrefix, streamName, bodySuffix)       \
-template<TINYFORMAT_ARGTYPES(n)>                                           \
-returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt,     \
-                    TINYFORMAT_VARARGS(n)) funcDeclSuffix                  \
-{                                                                          \
-    bodyPrefix                                                             \
-    tinyformat::format(streamName, fmt, TINYFORMAT_PASSARGS(n));           \
-    bodySuffix                                                             \
-}                                                                          \
-
-#define TINYFORMAT_WRAP_FORMAT(returnType, funcName, funcDeclSuffix,       \
-                               bodyPrefix, streamName, bodySuffix)         \
-inline                                                                     \
-returnType funcName(TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS const char* fmt      \
-                    ) funcDeclSuffix                                       \
-{                                                                          \
-    bodyPrefix                                                             \
-    tinyformat::detail::FormatIterator(streamName, fmt).finish();          \
-    bodySuffix                                                             \
-}                                                                          \
-TINYFORMAT_WRAP_FORMAT_N(1 , returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(2 , returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(3 , returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(4 , returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(5 , returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(6 , returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(7 , returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(8 , returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(9 , returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(10, returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(11, returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(12, returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(13, returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(14, returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(15, returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-TINYFORMAT_WRAP_FORMAT_N(16, returnType, funcName, funcDeclSuffix, bodyPrefix, streamName, bodySuffix) \
-
-
 } // namespace tinyformat
 
 #endif // TINYFORMAT_H_INCLUDED

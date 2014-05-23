@@ -69,22 +69,6 @@ struct TestWrap
 };
 
 
-// Test deprecated wrapper macro.  Will be removed!
-struct TestWrapOld
-{
-    std::ostringstream m_oss;
-#   undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
-#   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS int code,
-    // std::string error(int code, const char* fmt, const Args&... args);
-    TINYFORMAT_WRAP_FORMAT(std::string, error, /**/,
-                           m_oss.clear(); m_oss << code << ": ";,
-                           m_oss,
-                           return m_oss.str();)
-#   undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
-#   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
-};
-
-
 struct TestExceptionDef : public std::runtime_error
 {
 #   define MAKE_CONSTRUCTOR(n)                                          \
@@ -251,9 +235,6 @@ int unitTests()
     // Test that interface wrapping works correctly
     TestWrap wrap;
     assert(wrap.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
-           "10: someformat asdf:2:4");
-    TestWrapOld wrapOld;
-    assert(wrapOld.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
            "10: someformat asdf:2:4");
 
     TestExceptionDef ex("blah %d", 100);
