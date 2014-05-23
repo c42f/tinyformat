@@ -165,9 +165,11 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%010d", 100), "0000000100");
     CHECK_EQUAL(tfm::format("%010d", -10), "-000000010"); // sign should extend
     CHECK_EQUAL(tfm::format("%#010X", 0xBEEF), "0X0000BEEF");
+    CHECK_EQUAL(tfm::format("% d",  10), " 10");
+    CHECK_EQUAL(tfm::format("% d", -10), "-10");
     // flag override precedence
-    CHECK_EQUAL(tfm::format("%+ 10d", 10), "       +10"); // '+' overrides ' '
-    CHECK_EQUAL(tfm::format("% +10d", 10), "       +10");
+    CHECK_EQUAL(tfm::format("%+ d", 10), "+10"); // '+' overrides ' '
+    CHECK_EQUAL(tfm::format("% +d", 10), "+10");
     CHECK_EQUAL(tfm::format("%-010d", 10), "10        "); // '-' overrides '0'
     CHECK_EQUAL(tfm::format("%0-10d", 10), "10        ");
 
