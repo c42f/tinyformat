@@ -590,197 +590,51 @@ class FormatArg
 };
 #endif
 
-
-// Class holding current position in format string and an output stream into
-// which arguments are formatted.
-class FormatIterator
+// Flags for features not representable with standard stream state
+enum ExtraFormatFlags
 {
-    public:
-        // Flags for features not representable with standard stream state
-        enum ExtraFormatFlags
-        {
-            Flag_None                = 0,
-            Flag_TruncateToPrecision = 1<<0, // truncate length to stream precision()
-            Flag_SpacePadPositive    = 1<<1, // pad positive values with spaces
-            Flag_VariableWidth       = 1<<2, // variable field width in arg list
-            Flag_VariablePrecision   = 1<<3  // variable field precision in arg list
-        };
-
-        // out is the output stream, fmt is the full format string
-        FormatIterator(std::ostream& out, const char* fmt)
-            : m_out(out),
-            m_fmt(fmt),
-            m_extraFlags(Flag_None),
-            m_wantWidth(false),
-            m_wantPrecision(false),
-            m_variableWidth(0),
-            m_variablePrecision(0),
-            m_origWidth(out.width()),
-            m_origPrecision(out.precision()),
-            m_origFlags(out.flags()),
-            m_origFill(out.fill())
-        { }
-
-        // Print remaining part of format string.
-        void finish()
-        {
-            // It would be nice if we could do this from the destructor, but we
-            // can't if TINFORMAT_ERROR is used to throw an exception!
-            m_fmt = printFormatStringLiteral(m_out, m_fmt);
-            if(*m_fmt != '\0')
-                TINYFORMAT_ERROR("tinyformat: Too many conversion specifiers in format string");
-        }
-
-        ~FormatIterator()
-        {
-            // Restore stream state
-            m_out.width(m_origWidth);
-            m_out.precision(m_origPrecision);
-            m_out.flags(m_origFlags);
-            m_out.fill(m_origFill);
-        }
-
-        void accept(const FormatArg& value);
-
-    private:
-        // Parse and return an integer from the string c, as atoi()
-        // On return, c is set to one past the end of the integer.
-        static int parseIntAndAdvance(const char*& c)
-        {
-            int i = 0;
-            for(;*c >= '0' && *c <= '9'; ++c)
-                i = 10*i + (*c - '0');
-            return i;
-        }
-
-        // Print literal part of format string and return next format spec
-        // position.
-        //
-        // Skips over any occurrences of '%%', printing a literal '%' to the
-        // output.  The position of the first % character of the next
-        // nontrivial format spec is returned, or the end of string.
-        static const char* printFormatStringLiteral(std::ostream& out,
-                                                    const char* fmt)
-        {
-            const char* c = fmt;
-            for(; true; ++c)
-            {
-                switch(*c)
-                {
-                    case '\0':
-                        out.write(fmt, static_cast<std::streamsize>(c - fmt));
-                        return c;
-                    case '%':
-                        out.write(fmt, static_cast<std::streamsize>(c - fmt));
-                        if(*(c+1) != '%')
-                            return c;
-                        // for "%%", tack trailing % onto next literal section.
-                        fmt = ++c;
-                        break;
-                }
-            }
-        }
-
-        static const char* streamStateFromFormat(std::ostream& out,
-                                                 unsigned int& extraFlags,
-                                                 const char* fmtStart,
-                                                 int variableWidth,
-                                                 int variablePrecision);
-
-        // Private copy & assign: Kill gcc warnings with -Weffc++
-        FormatIterator(const FormatIterator&);
-        FormatIterator& operator=(const FormatIterator&);
-
-        // Stream, current format string & state
-        std::ostream& m_out;
-        const char* m_fmt;
-        unsigned int m_extraFlags;
-        // State machine info for handling of variable width & precision
-        bool m_wantWidth;
-        bool m_wantPrecision;
-        int m_variableWidth;
-        int m_variablePrecision;
-        // Saved stream state
-        std::streamsize m_origWidth;
-        std::streamsize m_origPrecision;
-        std::ios::fmtflags m_origFlags;
-        char m_origFill;
+    Flag_None                = 0,
+    Flag_TruncateToPrecision = 1<<0, // truncate length to stream precision()
+    Flag_SpacePadPositive    = 1<<1, // pad positive values with spaces
+    Flag_VariableWidth       = 1<<2, // variable field width in arg list
+    Flag_VariablePrecision   = 1<<3  // variable field precision in arg list
 };
 
-
-// Accept a value for formatting into the internal stream.
-inline void FormatIterator::accept(const FormatArg& value)
+// Parse and return an integer from the string c, as atoi()
+// On return, c is set to one past the end of the integer.
+inline int parseIntAndAdvance(const char*& c)
 {
-    // Parse the format string
-    const char* fmtEnd = 0;
-    if(m_extraFlags == Flag_None && !m_wantWidth && !m_wantPrecision)
-    {
-        m_fmt = printFormatStringLiteral(m_out, m_fmt);
-        fmtEnd = streamStateFromFormat(m_out, m_extraFlags, m_fmt, 0, 0);
-        m_wantWidth     = (m_extraFlags & Flag_VariableWidth) != 0;
-        m_wantPrecision = (m_extraFlags & Flag_VariablePrecision) != 0;
-    }
-    // Consume value as variable width and precision specifier if necessary
-    if(m_extraFlags & (Flag_VariableWidth | Flag_VariablePrecision))
-    {
-        if(m_wantWidth || m_wantPrecision)
-        {
-            int v = value.toInt();
-            if(m_wantWidth)
-            {
-                m_variableWidth = v;
-                m_wantWidth = false;
-            }
-            else if(m_wantPrecision)
-            {
-                m_variablePrecision = v;
-                m_wantPrecision = false;
-            }
-            return;
-        }
-        // If we get here, we've set both the variable precision and width as
-        // required and we need to rerun the stream state setup to insert these.
-        fmtEnd = streamStateFromFormat(m_out, m_extraFlags, m_fmt,
-                                       m_variableWidth, m_variablePrecision);
-    }
+    int i = 0;
+    for(;*c >= '0' && *c <= '9'; ++c)
+        i = 10*i + (*c - '0');
+    return i;
+}
 
-    // Format the value into the stream.
-    if(!(m_extraFlags & (Flag_SpacePadPositive | Flag_TruncateToPrecision)))
-        value.format(m_out, m_fmt, fmtEnd);
-    else
+// Print literal part of format string and return next format spec
+// position.
+//
+// Skips over any occurrences of '%%', printing a literal '%' to the
+// output.  The position of the first % character of the next
+// nontrivial format spec is returned, or the end of string.
+inline const char* printFormatStringLiteral(std::ostream& out, const char* fmt)
+{
+    const char* c = fmt;
+    for(; true; ++c)
     {
-        // The following are special cases where there's no direct
-        // correspondence between stream formatting and the printf() behaviour.
-        // Instead, we simulate the behaviour crudely by formatting into a
-        // temporary string stream and munging the resulting string.
-        std::ostringstream tmpStream;
-        tmpStream.copyfmt(m_out);
-        if(m_extraFlags & Flag_SpacePadPositive)
-            tmpStream.setf(std::ios::showpos);
-        // formatCStringTruncate is required for truncating conversions like
-        // "%.4s" where at most 4 characters of the c-string should be read.
-        // If we didn't include this special case, we might read off the end.
-        if(!( (m_extraFlags & Flag_TruncateToPrecision) &&
-             value.formatCStringTruncate(tmpStream, m_out.precision()) ))
+        switch(*c)
         {
-            // Not a truncated c-string; just format normally.
-            value.format(tmpStream, m_fmt, fmtEnd);
+            case '\0':
+                out.write(fmt, static_cast<std::streamsize>(c - fmt));
+                return c;
+            case '%':
+                out.write(fmt, static_cast<std::streamsize>(c - fmt));
+                if(*(c+1) != '%')
+                    return c;
+                // for "%%", tack trailing % onto next literal section.
+                fmt = ++c;
+                break;
         }
-        std::string result = tmpStream.str(); // allocates... yuck.
-        if(m_extraFlags & Flag_SpacePadPositive)
-        {
-            for(size_t i = 0, iend = result.size(); i < iend; ++i)
-                if(result[i] == '+')
-                    result[i] = ' ';
-        }
-        if((m_extraFlags & Flag_TruncateToPrecision) &&
-           (int)result.size() > (int)m_out.precision())
-            m_out.write(result.c_str(), m_out.precision());
-        else
-            m_out << result;
     }
-    m_extraFlags = Flag_None;
-    m_fmt = fmtEnd;
 }
 
 
@@ -792,11 +646,11 @@ inline void FormatIterator::accept(const FormatArg& value)
 // Formatting options which can't be natively represented using the ostream
 // state are returned in the extraFlags parameter which is a bitwise
 // combination of values from the ExtraFormatFlags enum.
-inline const char* FormatIterator::streamStateFromFormat(std::ostream& out,
-                                                         unsigned int& extraFlags,
-                                                         const char* fmtStart,
-                                                         int variableWidth,
-                                                         int variablePrecision)
+inline const char* streamStateFromFormat(std::ostream& out,
+                                         unsigned int& extraFlags,
+                                         const char* fmtStart,
+                                         int variableWidth,
+                                         int variablePrecision)
 {
     if(*fmtStart != '%')
     {
@@ -970,15 +824,93 @@ inline const char* FormatIterator::streamStateFromFormat(std::ostream& out,
 }
 
 
-
 //------------------------------------------------------------------------------
-inline void formatImpl(std::ostream& out, const char* fmt, detail::FormatArg* formatters,
-                int numFormatters)
+inline void formatImpl(std::ostream& out, const char* fmt,
+                       const detail::FormatArg* formatters,
+                       int numFormatters)
 {
-    detail::FormatIterator fmtIter(out, fmt);
-    for (int i = 0; i < numFormatters; ++i)
-        fmtIter.accept(formatters[i]);
-    fmtIter.finish();
+    // Saved stream state
+    std::streamsize origWidth = out.width();
+    std::streamsize origPrecision = out.precision();
+    std::ios::fmtflags origFlags = out.flags();
+    char origFill = out.fill();
+
+    for (int argIndex = 0; argIndex < numFormatters; ++argIndex)
+    {
+        // Parse the format string
+        unsigned int extraFlags = Flag_None;
+        fmt = printFormatStringLiteral(out, fmt);
+        const char* fmtEnd = streamStateFromFormat(out, extraFlags, fmt, 0, 0);
+        // FIXME - store as bools?
+        bool wantWidth     = (extraFlags & Flag_VariableWidth) != 0;
+        bool wantPrecision = (extraFlags & Flag_VariablePrecision) != 0;
+
+        // Consume arg as variable width and precision specifier if necessary
+        if(wantWidth || wantPrecision)
+        {
+            if (argIndex + (int) wantWidth + (int) wantPrecision >= numFormatters)
+                TINYFORMAT_ERROR("Not enough arguments for variable width or precision");
+            int variableWidth = 0;
+            int variablePrecision = 0;
+            if (wantWidth)
+                variableWidth = formatters[argIndex++].toInt();
+            if (wantPrecision)
+                variablePrecision = formatters[argIndex++].toInt();
+            // Rerun the stream state setup to insert variable width & precision
+            // FIXME: Refactor so this isn't necessary?
+            fmtEnd = streamStateFromFormat(out, extraFlags, fmt,
+                                           variableWidth, variablePrecision);
+        }
+
+        const FormatArg& arg = formatters[argIndex];
+        // Format the arg into the stream.
+        if(!(extraFlags & (Flag_SpacePadPositive | Flag_TruncateToPrecision)))
+            arg.format(out, fmt, fmtEnd);
+        else
+        {
+            // The following are special cases where there's no direct
+            // correspondence between stream formatting and the printf() behaviour.
+            // Instead, we simulate the behaviour crudely by formatting into a
+            // temporary string stream and munging the resulting string.
+            std::ostringstream tmpStream;
+            tmpStream.copyfmt(out);
+            if(extraFlags & Flag_SpacePadPositive)
+                tmpStream.setf(std::ios::showpos);
+            // formatCStringTruncate is required for truncating conversions like
+            // "%.4s" where at most 4 characters of the c-string should be read.
+            // If we didn't include this special case, we might read off the end.
+            if(!( (extraFlags & Flag_TruncateToPrecision) &&
+                arg.formatCStringTruncate(tmpStream, out.precision()) ))
+            {
+                // Not a truncated c-string; just format normally.
+                arg.format(tmpStream, fmt, fmtEnd);
+            }
+            std::string result = tmpStream.str(); // allocates... yuck.
+            if(extraFlags & Flag_SpacePadPositive)
+            {
+                for(size_t i = 0, iend = result.size(); i < iend; ++i)
+                    if(result[i] == '+')
+                        result[i] = ' ';
+            }
+            if((extraFlags & Flag_TruncateToPrecision) &&
+            (int)result.size() > (int)out.precision())
+                out.write(result.c_str(), out.precision());
+            else
+                out << result;
+        }
+        fmt = fmtEnd;
+    }
+
+    // Print remaining part of format string.
+    fmt = printFormatStringLiteral(out, fmt);
+    if(*fmt != '\0')
+        TINYFORMAT_ERROR("tinyformat: Too many conversion specifiers in format string");
+
+    // Restore stream state
+    out.width(origWidth);
+    out.precision(origPrecision);
+    out.flags(origFlags);
+    out.fill(origFill);
 }
 
 
@@ -995,7 +927,7 @@ template<typename... Args>
 void format(std::ostream& out, const char* fmt, const Args&... args)
 {
     detail::FormatArg formatters[] = {detail::FormatArg(args)...};
-    formatImpl(out, fmt, formatters, sizeof...(args));
+    detail::formatImpl(out, fmt, formatters, sizeof...(args));
 }
 
 template<typename... Args>
