@@ -462,66 +462,6 @@ TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE(const char)
 TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE(char)
 #undef TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE
 
-#if 0
-class FormatArg
-{
-    public:
-        template<typename T>
-        FormatArg(const T& value)
-            : m_formatImpl(&formatImpl<T>), m_value((void*)&value) { }
-
-        void format(std::ostream& out, const char* fmtBegin, const char* fmtEnd) const
-        {
-            m_formatImpl(Action_Format, m_value, &out, fmtBegin, fmtEnd, 0);
-        }
-
-        bool formatCStringTruncate(std::ostream& out,
-                                   std::streamsize truncLen) const
-        {
-            return m_formatImpl(Action_FormatCStringTruncate, m_value, &out, 0, 0, truncLen);
-        }
-
-        int toInt() const
-        {
-            return m_formatImpl(Action_ToInt, m_value, 0, 0, 0, 0);
-        }
-
-    private:
-        enum Action
-        {
-            Action_Format,
-            Action_FormatCStringTruncate,
-            Action_ToInt
-        };
-
-        typedef int (*FormatArgFunc)(Action, const void*, std::ostream*,
-                                     const char*, const char*, std::streamsize);
-
-        template<typename T>
-        static int formatImpl(Action action, const void* value,
-                              std::ostream* out, const char* fmtBegin,
-                              const char* fmtEnd, std::streamsize truncLen)
-        {
-            const T& val = *(const T*)value;
-            switch (action)
-            {
-                case Action_Format:
-                    formatValue(*out, fmtBegin, fmtEnd, val);
-                    return 0;
-                case Action_FormatCStringTruncate:
-                    return detail::formatCStringTruncate(*out, val, truncLen);
-                case Action_ToInt:
-                    return convertToInt<T>::invoke(val);
-                default: assert(0);
-            }
-        };
-
-        FormatArgFunc m_formatImpl;
-        const void* m_value;
-};
-
-
-#else
 
 struct FormatArgFuncs
 {
@@ -531,7 +471,6 @@ struct FormatArgFuncs
                                        std::streamsize truncLen) const = 0;
     virtual int toInt(const void* value) const = 0;
 };
-
 
 template<typename T>
 struct FormatArgFuncsTyped : FormatArgFuncs
@@ -590,7 +529,7 @@ class FormatArg
         const void* m_value;
         const FormatArgFuncs* m_impl;
 };
-#endif
+
 
 // Flags for features not representable with standard stream state
 enum ExtraFormatFlags
