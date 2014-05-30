@@ -41,11 +41,13 @@ void doFormat_a()
 
 void doFormat_a()
 {
-    std::cout << "somefile.cpp" << "\n";
-    std::cout << "somefile.cpp" << 42 << "\n";
-    std::cout << "somefile.cpp" << 42 << "asdf" << "\n";
-    std::cout << "somefile.cpp" << 42 << 1 << "asdf" << "\n";
-    std::cout << "somefile.cpp" << 42 << 1 << 2 << "asdf" << "\n";
+    const char* str1 = "somefile.cpp";
+    const char* str2 = "asdf";
+    std::cout << str1 << "\n";
+    std::cout << str1 << ":" << 42 << "\n";
+    std::cout << str1 << ":" << 42 << ":" << str2 << "\n";
+    std::cout << str1 << ":" << 42 << ":" << 1 << ":" << str2 << "\n";
+    std::cout << str1 << ":" << 42 << ":" << 1 << ":" << 2 << ":" << str2 << "\n";
 }
 
 #else
@@ -63,11 +65,13 @@ void doFormat_a()
 
 void doFormat_a()
 {
-    PRINTF("%s\n", "somefile.cpp");
-    PRINTF("%s:%d\n", "somefile.cpp", 42);
-    PRINTF("%s:%d:%s\n", "somefile.cpp", 42, "asdf");
-    PRINTF("%s:%d:%d:%s\n", "somefile.cpp", 42, 1, "asdf");
-    PRINTF("%s:%d:%d:%d:%s\n", "somefile.cpp", 42, 1, 2, "asdf");
+    const char* str1 = "somefile.cpp";
+    const char* str2 = "asdf";
+    PRINTF("%s\n", str1);
+    PRINTF("%s:%d\n", str1, 42);
+    PRINTF("%s:%d:%s\n", str1, 42, str2);
+    PRINTF("%s:%d:%d:%s\n", str1, 42, 1, str2);
+    PRINTF("%s:%d:%d:%d:%s\n", str1, 42, 1, 2, str2);
 }
 #endif
 '
