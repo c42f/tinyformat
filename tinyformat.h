@@ -961,7 +961,7 @@ TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_MAKEFORMATLIST)
 ///
 /// The name vformat() is chosen for the semantic similarity to vprintf(): the
 /// list of format arguments is held in a single function argument.
-void vformat(std::ostream& out, const char* fmt, FormatListRef list)
+inline void vformat(std::ostream& out, const char* fmt, FormatListRef list)
 {
     detail::formatImpl(out, fmt, list.m_formatters, list.m_N);
 }
