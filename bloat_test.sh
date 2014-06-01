@@ -100,5 +100,6 @@ echo "return 0; }" >> ${prefix}main.cpp
 # Compile
 time g++ $* ${prefix}???.cpp ${prefix}main.cpp -o ${prefix}.out
 ls -sh ${prefix}.out
-strip ${prefix}.out
-ls -sh ${prefix}.out
+cp ${prefix}.out ${prefix}stripped.out
+strip ${prefix}stripped.out
+ls -sh ${prefix}stripped.out
