@@ -246,6 +246,29 @@ struct convertToInt<T,true>
     static int invoke(const T& value) { return static_cast<int>(value); }
 };
 
+// Format at most ntrunc characters to the given stream.
+template<typename T>
+inline void formatTruncated(std::ostream& out, const T& value, int ntrunc)
+{
+    std::ostringstream tmp;
+    tmp << value;
+    std::string result = tmp.str();
+    out.write(result.c_str(), std::min(ntrunc, (int)result.size()));
+}
+#define TINYFORMAT_DEFINE_FORMAT_TRUNCATED_CSTR(type)       \
+inline void formatTruncated(std::ostream& out, type* value, int ntrunc) \
+{                                                           \
+    std::streamsize len = 0;                                \
+    while(len < ntrunc && value[len] != 0)                  \
+        ++len;                                              \
+    out.write(value, len);                                  \
+}
+// Overload for const char* and char*.  Could overload for signed & unsigned
+// char too, but these are technically unneeded for printf compatibility.
+TINYFORMAT_DEFINE_FORMAT_TRUNCATED_CSTR(const char)
+TINYFORMAT_DEFINE_FORMAT_TRUNCATED_CSTR(char)
+#undef TINYFORMAT_DEFINE_FORMAT_TRUNCATED_CSTR
+
 } // namespace detail
 
 
@@ -264,8 +287,8 @@ struct convertToInt<T,true>
 // operator<< to format the type T, with special cases for the %c and %p
 // conversions.
 template<typename T>
-inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,
-                        const char* fmtEnd, const T& value)
+inline void formatValue(std::ostream& out, const char* fmtBegin,
+                        const char* fmtEnd, int ntrunc, const T& value)
 {
 #ifndef TINYFORMAT_ALLOW_WCHAR_STRINGS
     // Since we don't support printing of wchar_t using "%ls", make it fail at
@@ -287,6 +310,12 @@ inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,
 #ifdef TINYFORMAT_OLD_LIBSTDCPLUSPLUS_WORKAROUND
     else if(detail::formatZeroIntegerWorkaround<T>::invoke(out, value)) /**/;
 #endif
+    else if(ntrunc >= 0)
+    {
+        // Take care not to overread C strings in truncating conversions like
+        // "%.4s" where at most 4 characters may be read.
+        detail::formatTruncated(out, value, ntrunc);
+    }
     else
         out << value;
 }
@@ -295,7 +324,7 @@ inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,
 // Overloaded version for char types to support printing as an integer
 #define TINYFORMAT_DEFINE_FORMATVALUE_CHAR(charType)                  \
 inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,  \
-                        const char* fmtEnd, charType value)           \
+                        const char* fmtEnd, int /**/, charType value) \
 {                                                                     \
     switch(*(fmtEnd-1))                                               \
     {                                                                 \
@@ -434,41 +463,11 @@ cog.outl('#define TINYFORMAT_FOREACH_ARGNUM(m) \\\n    ' +
 
 namespace detail {
 
-// Format at most truncLen characters of a C string to the given
-// stream.  Return true if formatting proceeded (generic version always
-// returns false)
-template<typename T>
-bool formatCStringTruncate(std::ostream& /*out*/, const T& /*value*/,
-                           std::streamsize /*truncLen*/)
-{
-    return false;
-}
-#define TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE(type)    \
-inline bool formatCStringTruncate(std::ostream& out, type* value,  \
-                                  std::streamsize truncLen)        \
-{                                                           \
-    std::streamsize len = 0;                                \
-    while(len < truncLen && value[len] != 0)                \
-        ++len;                                              \
-    out.write(value, len);                                  \
-    return true;                                            \
-}
-
-
-// Overload for const char* and char*.  Could overload for signed &
-// unsigned char too, but these are technically unneeded for printf
-// compatibility.
-TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE(const char)
-TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE(char)
-#undef TINYFORMAT_DEFINE_FORMAT_C_STRING_TRUNCATE
-
-
 struct FormatArgFuncs
 {
     virtual void format(std::ostream& out, const char* fmtBegin,
-                        const char* fmtEnd, const void* value) const = 0;
-    virtual bool formatCStringTruncate(std::ostream& out, const void* value,
-                                       std::streamsize truncLen) const = 0;
+                        const char* fmtEnd, int ntrunc,
+                        const void* value) const = 0;
     virtual int toInt(const void* value) const = 0;
 };
 
@@ -476,15 +475,9 @@ template<typename T>
 struct FormatArgFuncsTyped : FormatArgFuncs
 {
     void format(std::ostream& out, const char* fmtBegin,
-                const char* fmtEnd, const void* value) const
+                const char* fmtEnd, int ntrunc, const void* value) const
     {
-        formatValue(out, fmtBegin, fmtEnd, *(const T*)value);
-    }
-
-    bool formatCStringTruncate(std::ostream& out, const void* value,
-                               std::streamsize truncLen) const
-    {
-        return detail::formatCStringTruncate(out, *(const T*)value, truncLen);
+        formatValue(out, fmtBegin, fmtEnd, ntrunc, *(const T*)value);
     }
 
     int toInt(const void* value) const
@@ -509,15 +502,9 @@ class FormatArg
         { }
 
         void format(std::ostream& out, const char* fmtBegin,
-                    const char* fmtEnd) const
+                    const char* fmtEnd, int ntrunc) const
         {
-            m_impl->format(out, fmtBegin, fmtEnd, m_value);
-        }
-
-        bool formatCStringTruncate(std::ostream& out,
-                                   std::streamsize truncLen) const
-        {
-            return m_impl->formatCStringTruncate(out, m_value, truncLen);
+            m_impl->format(out, fmtBegin, fmtEnd, ntrunc, m_value);
         }
 
         int toInt() const
@@ -535,7 +522,6 @@ class FormatArg
 enum ExtraFormatFlags
 {
     Flag_None                = 0,
-    Flag_TruncateToPrecision = 1<<0, // truncate length to stream precision()
     Flag_SpacePadPositive    = 1<<1, // pad positive values with spaces
     Flag_VariableWidth       = 1<<2, // variable field width in arg list
     Flag_VariablePrecision   = 1<<3  // variable field precision in arg list
@@ -586,12 +572,11 @@ inline const char* printFormatStringLiteral(std::ostream& out, const char* fmt)
 //
 // Formatting options which can't be natively represented using the ostream
 // state are returned in the extraFlags parameter which is a bitwise
-// combination of values from the ExtraFormatFlags enum.
-inline const char* streamStateFromFormat(std::ostream& out,
-                                         unsigned int& extraFlags,
-                                         const char* fmtStart,
-                                         int variableWidth,
-                                         int variablePrecision)
+// combination of values from the ExtraFormatFlags enum.  For truncating
+// conversions, the maximum number of output chars is stored into ntrunc.
+inline const char* streamStateFromFormat(std::ostream& out, unsigned int& extraFlags,
+                                         int& ntrunc, const char* fmtStart,
+                                         int variableWidth, int variablePrecision)
 {
     if(*fmtStart != '%')
     {
@@ -738,7 +723,7 @@ inline const char* streamStateFromFormat(std::ostream& out,
             break;
         case 's':
             if(precisionSet)
-                extraFlags |= Flag_TruncateToPrecision;
+                ntrunc = out.precision();
             // Make %s print booleans as "true" and "false"
             out.setf(std::ios::boolalpha);
             break;
@@ -780,8 +765,9 @@ inline void formatImpl(std::ostream& out, const char* fmt,
     {
         // Parse the format string
         unsigned int extraFlags = Flag_None;
+        int ntrunc = -1;
         fmt = printFormatStringLiteral(out, fmt);
-        const char* fmtEnd = streamStateFromFormat(out, extraFlags, fmt, 0, 0);
+        const char* fmtEnd = streamStateFromFormat(out, extraFlags, ntrunc, fmt, 0, 0);
         // FIXME - store as bools?
         bool wantWidth     = (extraFlags & Flag_VariableWidth) != 0;
         bool wantPrecision = (extraFlags & Flag_VariablePrecision) != 0;
@@ -799,45 +785,28 @@ inline void formatImpl(std::ostream& out, const char* fmt,
                 variablePrecision = formatters[argIndex++].toInt();
             // Rerun the stream state setup to insert variable width & precision
             // FIXME: Refactor so this isn't necessary?
-            fmtEnd = streamStateFromFormat(out, extraFlags, fmt,
+            fmtEnd = streamStateFromFormat(out, extraFlags, ntrunc, fmt,
                                            variableWidth, variablePrecision);
         }
 
         const FormatArg& arg = formatters[argIndex];
         // Format the arg into the stream.
-        if(!(extraFlags & (Flag_SpacePadPositive | Flag_TruncateToPrecision)))
-            arg.format(out, fmt, fmtEnd);
+        if(!(extraFlags & Flag_SpacePadPositive))
+            arg.format(out, fmt, fmtEnd, ntrunc);
         else
         {
-            // The following are special cases where there's no direct
-            // correspondence between stream formatting and the printf() behaviour.
-            // Instead, we simulate the behaviour crudely by formatting into a
-            // temporary string stream and munging the resulting string.
+            // The following is a special case with no direct correspondence
+            // between stream formatting and the printf() behaviour.  Simulate
+            // it crudely by formatting into a temporary string stream and
+            // munging the resulting string.
             std::ostringstream tmpStream;
             tmpStream.copyfmt(out);
-            if(extraFlags & Flag_SpacePadPositive)
-                tmpStream.setf(std::ios::showpos);
-            // formatCStringTruncate is required for truncating conversions like
-            // "%.4s" where at most 4 characters of the c-string should be read.
-            // If we didn't include this special case, we might read off the end.
-            if(!( (extraFlags & Flag_TruncateToPrecision) &&
-                arg.formatCStringTruncate(tmpStream, out.precision()) ))
-            {
-                // Not a truncated c-string; just format normally.
-                arg.format(tmpStream, fmt, fmtEnd);
-            }
+            tmpStream.setf(std::ios::showpos);
+            arg.format(tmpStream, fmt, fmtEnd, ntrunc);
             std::string result = tmpStream.str(); // allocates... yuck.
-            if(extraFlags & Flag_SpacePadPositive)
-            {
-                for(size_t i = 0, iend = result.size(); i < iend; ++i)
-                    if(result[i] == '+')
-                        result[i] = ' ';
-            }
-            if((extraFlags & Flag_TruncateToPrecision) &&
-            (int)result.size() > (int)out.precision())
-                out.write(result.c_str(), out.precision());
-            else
-                out << result;
+            for(size_t i = 0, iend = result.size(); i < iend; ++i)
+                if(result[i] == '+') result[i] = ' ';
+            out << result;
         }
         fmt = fmtEnd;
     }

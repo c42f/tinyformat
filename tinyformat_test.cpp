@@ -142,6 +142,7 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%10.4f", 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%.f", 10.1), "10");
     CHECK_EQUAL(tfm::format("%.2s", "asdf"), "as"); // strings truncate to precision
+    CHECK_EQUAL(tfm::format("%.2s", std::string("asdf")), "as");
 //    // Test variable precision & width
     CHECK_EQUAL(tfm::format("%*.4f", 10, 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%10.*f", 4, 1234.1234567890), " 1234.1235");
