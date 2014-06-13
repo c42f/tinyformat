@@ -167,6 +167,9 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%#010X", 0xBEEF), "0X0000BEEF");
     CHECK_EQUAL(tfm::format("% d",  10), " 10");
     CHECK_EQUAL(tfm::format("% d", -10), "-10");
+    // Test flags with variable precision & width
+    CHECK_EQUAL(tfm::format("%+.2d", 3), "+03");
+    CHECK_EQUAL(tfm::format("%+.2d", -3), "-03");
     // flag override precedence
     CHECK_EQUAL(tfm::format("%+ d", 10), "+10"); // '+' overrides ' '
     CHECK_EQUAL(tfm::format("% +d", 10), "+10");
