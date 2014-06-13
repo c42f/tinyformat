@@ -686,6 +686,7 @@ inline const char* FormatIterator::streamStateFromFormat(std::ostream& out,
     extraFlags = Flag_None;
     bool precisionSet = false;
     bool widthSet = false;
+    int widthExtra = 0;
     const char* c = fmtStart + 1;
     // 1) Parse flags
     for(;; ++c)
@@ -717,6 +718,7 @@ inline const char* FormatIterator::streamStateFromFormat(std::ostream& out,
             case '+':
                 out.setf(std::ios::showpos);
                 extraFlags &= ~Flag_SpacePadPositive;
+                widthExtra = 1;
                 continue;
         }
         break;
@@ -832,7 +834,7 @@ inline const char* FormatIterator::streamStateFromFormat(std::ostream& out,
         // padded with zeros on the left).  This isn't really supported by the
         // iostreams, but we can approximately simulate it with the width if
         // the width isn't otherwise used.
-        out.width(out.precision());
+        out.width(out.precision() + widthExtra);
         out.setf(std::ios::internal, std::ios::adjustfield);
         out.fill('0');
     }
