@@ -33,12 +33,15 @@ void compareSprintf(const Args&... args)
 }
 #endif
 
-#define EXPECT_ERROR(expression)                            \
-{                                                           \
-    try { expression; assert(0 && "expected exception in "  \
-                             #expression); }                \
-    catch(std::runtime_error&) {}                           \
-}
+#define EXPECT_ERROR(expression)                                \
+try                                                             \
+{                                                               \
+    expression;                                                 \
+    std::cout << "test failed, line " << __LINE__ << "\n";      \
+    std::cout << "expected exception in " #expression << "\n";  \
+    ++nfailed;                                                  \
+}                                                               \
+catch(std::runtime_error&) {}                                   \
 
 #define CHECK_EQUAL(a, b)                                  \
 if(!((a) == (b)))                                          \
@@ -66,22 +69,6 @@ struct TestWrap
         return m_oss.str();                                              \
     }
     TINYFORMAT_FOREACH_ARGNUM(MAKE_ERROR_FUNC)
-};
-
-
-// Test deprecated wrapper macro.  Will be removed!
-struct TestWrapOld
-{
-    std::ostringstream m_oss;
-#   undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
-#   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS int code,
-    // std::string error(int code, const char* fmt, const Args&... args);
-    TINYFORMAT_WRAP_FORMAT(std::string, error, /**/,
-                           m_oss.clear(); m_oss << code << ": ";,
-                           m_oss,
-                           return m_oss.str();)
-#   undef TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
-#   define TINYFORMAT_WRAP_FORMAT_EXTRA_ARGS
 };
 
 
@@ -158,6 +145,7 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%10.4f", 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%.f", 10.1), "10");
     CHECK_EQUAL(tfm::format("%.2s", "asdf"), "as"); // strings truncate to precision
+    CHECK_EQUAL(tfm::format("%.2s", std::string("asdf")), "as");
 //    // Test variable precision & width
     CHECK_EQUAL(tfm::format("%*.4f", 10, 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%10.*f", 4, 1234.1234567890), " 1234.1235");
@@ -204,35 +192,24 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%0.10f:%04d:%+g:%s:%#X:%c:%%:%%asdf",
                        1.234, 42, 3.13, "str", 0XDEAD, (int)'X'),
                 "1.2340000000:0042:+3.13:str:0XDEAD:X:%:%asdf");
+
     // Test wrong number of args
-    EXPECT_ERROR(
-        tfm::format("%d", 5, 10)
-    )
-    EXPECT_ERROR(
-        tfm::format("%d %d", 1)
-    )
+    EXPECT_ERROR( tfm::format("%d", 5, 10) )
+    EXPECT_ERROR( tfm::format("%d %d", 1)  )
     // Unterminated format spec
-    EXPECT_ERROR(
-        tfm::format("%123", 10)
-    )
+    EXPECT_ERROR( tfm::format("%123", 10)  )
     // Types used to specify variable width/precision must be convertible to int.
-    EXPECT_ERROR(
-        tfm::format("%0*d", "thing that can't convert to int", 42)
-    )
-    EXPECT_ERROR(
-        tfm::format("%0.*d", "thing that can't convert to int", 42)
-    )
+    EXPECT_ERROR( tfm::format("%0*d", "thing that can't convert to int", 42)  )
+    EXPECT_ERROR( tfm::format("%0.*d", "thing that can't convert to int", 42) )
+    // Error required if not enough args for variable width/precision
+    EXPECT_ERROR( tfm::format("%*d", 1)      )
+    EXPECT_ERROR( tfm::format("%.*d", 1)     )
+    EXPECT_ERROR( tfm::format("%*.*d", 1, 2) )
 
     // Unhandled C99 format spec
-    EXPECT_ERROR(
-        tfm::format("%n", 10)
-    )
-    EXPECT_ERROR(
-        tfm::format("%a", 10)
-    )
-    EXPECT_ERROR(
-        tfm::format("%A", 10)
-    )
+    EXPECT_ERROR( tfm::format("%n", 10) )
+    EXPECT_ERROR( tfm::format("%a", 10) )
+    EXPECT_ERROR( tfm::format("%A", 10) )
 
 #ifdef TEST_WCHAR_T_COMPILE
     // Test wchar_t handling - should fail to compile!
@@ -251,9 +228,6 @@ int unitTests()
     // Test that interface wrapping works correctly
     TestWrap wrap;
     assert(wrap.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
-           "10: someformat asdf:2:4");
-    TestWrapOld wrapOld;
-    assert(wrapOld.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
            "10: someformat asdf:2:4");
 
     TestExceptionDef ex("blah %d", 100);
