@@ -33,12 +33,15 @@ void compareSprintf(const Args&... args)
 }
 #endif
 
-#define EXPECT_ERROR(expression)                            \
-{                                                           \
-    try { expression; assert(0 && "expected exception in "  \
-                             #expression); }                \
-    catch(std::runtime_error&) {}                           \
-}
+#define EXPECT_ERROR(expression)                                \
+try                                                             \
+{                                                               \
+    expression;                                                 \
+    std::cout << "test failed, line " << __LINE__ << "\n";      \
+    std::cout << "expected exception in " #expression << "\n";  \
+    ++nfailed;                                                  \
+}                                                               \
+catch(std::runtime_error&) {}                                   \
 
 #define CHECK_EQUAL(a, b)                                  \
 if(!((a) == (b)))                                          \
@@ -206,6 +209,16 @@ int unitTests()
     )
     EXPECT_ERROR(
         tfm::format("%0.*d", "thing that can't convert to int", 42)
+    )
+    // Error required if not enough args for variable width/precision
+    EXPECT_ERROR(
+        tfm::format("%*d", 1);
+    )
+    EXPECT_ERROR(
+        tfm::format("%.*d", 1);
+    )
+    EXPECT_ERROR(
+        tfm::format("%*.*d", 1, 2);
     )
 
     // Unhandled C99 format spec

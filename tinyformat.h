@@ -520,15 +520,6 @@ class FormatArg
 };
 
 
-// Flags for features not representable with standard stream state
-enum ExtraFormatFlags
-{
-    Flag_None                = 0,
-    Flag_SpacePadPositive    = 1<<1, // pad positive values with spaces
-    Flag_VariableWidth       = 1<<2, // variable field width in arg list
-    Flag_VariablePrecision   = 1<<3  // variable field precision in arg list
-};
-
 // Parse and return an integer from the string c, as atoi()
 // On return, c is set to one past the end of the integer.
 inline int parseIntAndAdvance(const char*& c)
@@ -573,12 +564,14 @@ inline const char* printFormatStringLiteral(std::ostream& out, const char* fmt)
 // with the form "%[flags][width][.precision][length]type".
 //
 // Formatting options which can't be natively represented using the ostream
-// state are returned in the extraFlags parameter which is a bitwise
-// combination of values from the ExtraFormatFlags enum.  For truncating
-// conversions, the maximum number of output chars is stored into ntrunc.
-inline const char* streamStateFromFormat(std::ostream& out, unsigned int& extraFlags,
+// state are returned in spacePadPositive (for space padded positive numbers)
+// and ntrunc (for truncating conversions).  argIndex is incremented if
+// necessary to pull out variable width and precision .  The function returns a
+// pointer to the character after the end of the current format spec.
+inline const char* streamStateFromFormat(std::ostream& out, bool& spacePadPositive,
                                          int& ntrunc, const char* fmtStart,
-                                         int variableWidth, int variablePrecision)
+                                         const detail::FormatArg* formatters,
+                                         int& argIndex, int numFormatters)
 {
     if(*fmtStart != '%')
     {
@@ -593,7 +586,6 @@ inline const char* streamStateFromFormat(std::ostream& out, unsigned int& extraF
     out.unsetf(std::ios::adjustfield | std::ios::basefield |
                std::ios::floatfield | std::ios::showbase | std::ios::boolalpha |
                std::ios::showpoint | std::ios::showpos | std::ios::uppercase);
-    extraFlags = Flag_None;
     bool precisionSet = false;
     bool widthSet = false;
     int widthExtra = 0;
@@ -623,11 +615,11 @@ inline const char* streamStateFromFormat(std::ostream& out, unsigned int& extraF
             case ' ':
                 // overridden by show positive sign, '+' flag.
                 if(!(out.flags() & std::ios::showpos))
-                    extraFlags |= Flag_SpacePadPositive;
+                    spacePadPositive = true;
                 continue;
             case '+':
                 out.setf(std::ios::showpos);
-                extraFlags &= ~Flag_SpacePadPositive;
+                spacePadPositive = false;
                 widthExtra = 1;
                 continue;
         }
@@ -642,15 +634,19 @@ inline const char* streamStateFromFormat(std::ostream& out, unsigned int& extraF
     if(*c == '*')
     {
         widthSet = true;
-        if(variableWidth < 0)
+        int width = 0;
+        if(argIndex < numFormatters)
+            width = formatters[argIndex++].toInt();
+        else
+            TINYFORMAT_ERROR("tinyformat: Not enough arguments to read variable width");
+        if(width < 0)
         {
             // negative widths correspond to '-' flag set
             out.fill(' ');
             out.setf(std::ios::left, std::ios::adjustfield);
-            variableWidth = -variableWidth;
+            width = -width;
         }
-        out.width(variableWidth);
-        extraFlags |= Flag_VariableWidth;
+        out.width(width);
         ++c;
     }
     // 3) Parse precision
@@ -661,8 +657,10 @@ inline const char* streamStateFromFormat(std::ostream& out, unsigned int& extraF
         if(*c == '*')
         {
             ++c;
-            extraFlags |= Flag_VariablePrecision;
-            precision = variablePrecision;
+            if(argIndex < numFormatters)
+                precision = formatters[argIndex++].toInt();
+            else
+                TINYFORMAT_ERROR("tinyformat: Not enough arguments to read variable precision");
         }
         else
         {
@@ -766,37 +764,20 @@ inline void formatImpl(std::ostream& out, const char* fmt,
     for (int argIndex = 0; argIndex < numFormatters; ++argIndex)
     {
         // Parse the format string
-        unsigned int extraFlags = Flag_None;
-        int ntrunc = -1;
         fmt = printFormatStringLiteral(out, fmt);
-        const char* fmtEnd = streamStateFromFormat(out, extraFlags, ntrunc, fmt, 0, 0);
-        // FIXME - store as bools?
-        bool wantWidth     = (extraFlags & Flag_VariableWidth) != 0;
-        bool wantPrecision = (extraFlags & Flag_VariablePrecision) != 0;
-
-        // Consume arg as variable width and precision specifier if necessary
-        if(wantWidth || wantPrecision)
+        bool spacePadPositive = false;
+        int ntrunc = -1;
+        const char* fmtEnd = streamStateFromFormat(out, spacePadPositive, ntrunc, fmt,
+                                                   formatters, argIndex, numFormatters);
+        if (argIndex >= numFormatters)
         {
-            if (argIndex + (int) wantWidth + (int) wantPrecision >= numFormatters)
-            {
-                TINYFORMAT_ERROR("Not enough arguments for variable width or precision");
-                return;
-            }
-            int variableWidth = 0;
-            int variablePrecision = 0;
-            if (wantWidth)
-                variableWidth = formatters[argIndex++].toInt();
-            if (wantPrecision)
-                variablePrecision = formatters[argIndex++].toInt();
-            // Rerun the stream state setup to insert variable width & precision
-            // FIXME: Refactor so this isn't necessary?
-            fmtEnd = streamStateFromFormat(out, extraFlags, ntrunc, fmt,
-                                           variableWidth, variablePrecision);
+            // Check args remain after reading any variable width/precision
+            TINYFORMAT_ERROR("tinyformat: Not enough format arguments");
+            return;
         }
-
         const FormatArg& arg = formatters[argIndex];
         // Format the arg into the stream.
-        if(!(extraFlags & Flag_SpacePadPositive))
+        if(!spacePadPositive)
             arg.format(out, fmt, fmtEnd, ntrunc);
         else
         {
