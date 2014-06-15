@@ -778,7 +778,10 @@ inline void formatImpl(std::ostream& out, const char* fmt,
         if(wantWidth || wantPrecision)
         {
             if (argIndex + (int) wantWidth + (int) wantPrecision >= numFormatters)
+            {
                 TINYFORMAT_ERROR("Not enough arguments for variable width or precision");
+                return;
+            }
             int variableWidth = 0;
             int variablePrecision = 0;
             if (wantWidth)
