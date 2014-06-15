@@ -192,45 +192,24 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%0.10f:%04d:%+g:%s:%#X:%c:%%:%%asdf",
                        1.234, 42, 3.13, "str", 0XDEAD, (int)'X'),
                 "1.2340000000:0042:+3.13:str:0XDEAD:X:%:%asdf");
+
     // Test wrong number of args
-    EXPECT_ERROR(
-        tfm::format("%d", 5, 10)
-    )
-    EXPECT_ERROR(
-        tfm::format("%d %d", 1)
-    )
+    EXPECT_ERROR( tfm::format("%d", 5, 10) )
+    EXPECT_ERROR( tfm::format("%d %d", 1)  )
     // Unterminated format spec
-    EXPECT_ERROR(
-        tfm::format("%123", 10)
-    )
+    EXPECT_ERROR( tfm::format("%123", 10)  )
     // Types used to specify variable width/precision must be convertible to int.
-    EXPECT_ERROR(
-        tfm::format("%0*d", "thing that can't convert to int", 42)
-    )
-    EXPECT_ERROR(
-        tfm::format("%0.*d", "thing that can't convert to int", 42)
-    )
+    EXPECT_ERROR( tfm::format("%0*d", "thing that can't convert to int", 42)  )
+    EXPECT_ERROR( tfm::format("%0.*d", "thing that can't convert to int", 42) )
     // Error required if not enough args for variable width/precision
-    EXPECT_ERROR(
-        tfm::format("%*d", 1);
-    )
-    EXPECT_ERROR(
-        tfm::format("%.*d", 1);
-    )
-    EXPECT_ERROR(
-        tfm::format("%*.*d", 1, 2);
-    )
+    EXPECT_ERROR( tfm::format("%*d", 1)      )
+    EXPECT_ERROR( tfm::format("%.*d", 1)     )
+    EXPECT_ERROR( tfm::format("%*.*d", 1, 2) )
 
     // Unhandled C99 format spec
-    EXPECT_ERROR(
-        tfm::format("%n", 10)
-    )
-    EXPECT_ERROR(
-        tfm::format("%a", 10)
-    )
-    EXPECT_ERROR(
-        tfm::format("%A", 10)
-    )
+    EXPECT_ERROR( tfm::format("%n", 10) )
+    EXPECT_ERROR( tfm::format("%a", 10) )
+    EXPECT_ERROR( tfm::format("%A", 10) )
 
 #ifdef TEST_WCHAR_T_COMPILE
     // Test wchar_t handling - should fail to compile!
