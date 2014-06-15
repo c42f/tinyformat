@@ -277,15 +277,17 @@ TINYFORMAT_DEFINE_FORMAT_TRUNCATED_CSTR(char)
 // desired.
 
 
-// Format a value into a stream. Called from format() for all types by default.
-//
-// Users may override this for their own types.  When this function is called,
-// the stream flags will have been modified according to the format string.
-// The format specification is provided in the range [fmtBegin, fmtEnd).
-//
-// By default, formatValue() uses the usual stream insertion operator
-// operator<< to format the type T, with special cases for the %c and %p
-// conversions.
+/// Format a value into a stream, delegating to operator<< by default.
+///
+/// Users may override this for their own types.  When this function is called,
+/// the stream flags will have been modified according to the format string.
+/// The format specification is provided in the range [fmtBegin, fmtEnd).  For
+/// truncating conversions, ntrunc is set to the desired maximum number of
+/// characters, for example "%.7s" calls formatValue with ntrunc = 7.
+///
+/// By default, formatValue() uses the usual stream insertion operator
+/// operator<< to format the type T, with special cases for the %c and %p
+/// conversions.
 template<typename T>
 inline void formatValue(std::ostream& out, const char* fmtBegin,
                         const char* fmtEnd, int ntrunc, const T& value)
@@ -828,10 +830,10 @@ inline void formatImpl(std::ostream& out, const char* fmt,
 
 /// List of template arguments format(), held in a type-opaque way.
 ///
-/// A FormatListRef may be conveniently used to pass arguments to non-template
-/// functions: All type information has been stripped from the arguments,
-/// leaving just enough of a common interface to perform formatting as
-/// required.
+/// A const reference to FormatList (typedef'd as FormatListRef) may be
+/// conveniently used to pass arguments to non-template functions: All type
+/// information has been stripped from the arguments, leaving just enough of a
+/// common interface to perform formatting as required.
 class FormatList
 {
     public:
@@ -846,6 +848,7 @@ class FormatList
         int m_N;
 };
 
+/// Reference to type-opaque format list for passing to vformat()
 typedef const FormatList& FormatListRef;
 
 

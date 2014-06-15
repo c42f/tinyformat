@@ -397,13 +397,14 @@ binaries.)
 Author and acknowledgements
 ---------------------------
 
-Tinyformat was written by Chris Foster [chris42f (at) gmail (d0t) com].  The
-implementation owes much to ``boost::format`` for showing that it's fairly
+Tinyformat was written by Chris Foster, with contributions from various people
+as recorded in the git repository.
+The implementation owes a lot to ``boost::format`` for showing that it's fairly
 easy to use stream based formatting to simulate most of the ``printf()``
-syntax.  Douglas Gregor's introduction to variadic templates
---- see http://www.generic-programming.org/~dgregor/cpp/variadic-templates.html ---
-was also helpful, especially since it solves exactly the ``printf()`` problem
-for the case of trivial format strings.
+syntax.  Douglas Gregor's introduction to variadic templates --- see
+http://www.generic-programming.org/~dgregor/cpp/variadic-templates.html --- was
+also helpful, especially since it solves exactly the ``printf()`` problem for
+the case of trivial format strings.
 
 Bugs
 ----
@@ -415,5 +416,5 @@ Here's a list of known bugs which are probably cumbersome to fix:
   temporary string stream, check the length, and finally send to the output
   stream with padding if necessary.  Doing this for all types would be
   quite inelegant because it implies extra allocations to make the temporary
-  stream.  A workaround is to add logic to operator<<() for composite user
+  stream.  A workaround is to add logic to ``operator<<()`` for composite user
   defined types so they are aware of the stream field width.
