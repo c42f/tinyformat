@@ -86,6 +86,18 @@
 // defined function bodies, use the macro TINYFORMAT_FOREACH_ARGNUM.  For an
 // example, see the implementation of printf() at the end of the source file.
 //
+// Sometimes it's useful to be able to pass a list of format arguments through
+// to a non-template function.  The FormatList class is provided as a way to do
+// this by storing the argument list in a type-opaque way.  Continuing the
+// example from above, we construct a FormatList using makeFormatList():
+//
+//   FormatListRef formatList = tfm::makeFormatList(weekday, month, day, hour, min);
+//
+// The format list can now be passed into any non-template function and used
+// via a call to the vformat() function:
+//
+//   tfm::vformat(std::cout, "%s, %s %d, %.2d:%.2d\n", formatList);
+//
 //
 // Additional API information
 // --------------------------

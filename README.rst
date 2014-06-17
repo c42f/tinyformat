@@ -248,7 +248,9 @@ The three macros ``TINYFORMAT_ARGTYPES(n)``, ``TINYFORMAT_VARARGS(n)`` and
 ``TINYFORMAT_PASSARGS(n)`` will generate a list of ``n`` argument types,
 type/name pairs and argument names respectively when called with an integer
 ``n`` between 1 and 16.  We can use these to define a macro which generates the
-desired user defined function with ``n`` arguments::
+desired user defined function with ``n`` arguments.  This should be followed by
+a call to ``TINYFORMAT_FOREACH_ARGNUM`` to generate the set of functions for
+all supported ``n``::
 
     #define MAKE_ERROR_FUNC(n)                                    \
     template<TINYFORMAT_ARGTYPES(n)>                              \
@@ -257,16 +259,38 @@ desired user defined function with ``n`` arguments::
         std::cerr << "error (code " << code << ")";               \
         tfm::format(std::cerr, fmt, TINYFORMAT_PASSARGS(n));      \
     }
-
-To generate all the desired function bodies we just need to call this macro
-for each ``n`` in the desired range of argument numbers.  Tinyformat provides a
-convenient macro to do this for you for all supported ``n``::
-
     TINYFORMAT_FOREACH_ARGNUM(MAKE_ERROR_FUNC)
 
-Note that in version 1.2 and below, wrapping was done using a more limited and
-unreadable macro TINYFORMAT_WRAP_FORMAT.  This still exists but has been
-deprecated and will be removed in version 2.
+Sometimes it's useful to be able to pass a list of format arguments through to
+a non-template function.  The ``FormatList`` class is provided as a way to do
+this by storing the argument list in a type-opaque way.  For example::
+
+    template<typename... Args>
+    void error(int code, const char* fmt, const Args&... args)
+    {
+        tfm::FormatListRef formatList = tfm::makeFormatList(args...);
+        errorImpl(code, fmt, formatList);
+    }
+
+What's interesting here is that ``errorImpl()`` is a non-template function so
+it could be separately compiled if desired.  The ``FormatList`` instance can be
+used via a call to the ``vformat()`` function (the name chosen for semantic
+similarity to ``vprintf()``)::
+
+    void errorImpl(int code, const char* fmt, tfm::FormatListRef formatList)
+    {
+        std::cerr << "error (code " << code << ")";
+        tfm::vformat(std::cout, fmt, formatList);
+    }
+
+The construction of a ``FormatList`` instance is very lightweight - it defers
+all formatting and simply stores a couple of function pointers and a value
+pointer per argument.  Since most of the actual work is done inside
+``vformat()``, any logic which causes an early exit of ``errorImpl()`` -
+filtering of verbose log messages based on error code for example - could be a
+useful optimization for programs using tinyformat.  (A faster option would be
+to write any early bailout code inside ``error()``, though this must be done in
+the header.)
 
 
 Benchmarks
