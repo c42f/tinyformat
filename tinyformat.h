@@ -457,33 +457,10 @@ cog.outl('#define TINYFORMAT_FOREACH_ARGNUM(m) \\\n    ' +
 
 namespace detail {
 
-struct FormatArgFuncs
-{
-    virtual void format(std::ostream& out, const char* fmtBegin,
-                        const char* fmtEnd, int ntrunc,
-                        const void* value) const = 0;
-    virtual int toInt(const void* value) const = 0;
-};
-
-template<typename T>
-struct FormatArgFuncsTyped : FormatArgFuncs
-{
-    void format(std::ostream& out, const char* fmtBegin,
-                const char* fmtEnd, int ntrunc, const void* value) const
-    {
-        formatValue(out, fmtBegin, fmtEnd, ntrunc, *(const T*)value);
-    }
-
-    int toInt(const void* value) const
-    {
-        return convertToInt<T>::invoke(*(const T*)value);
-    }
-
-    static FormatArgFuncsTyped instance;
-};
-template<typename T> FormatArgFuncsTyped<T> FormatArgFuncsTyped<T>::instance;
-
-
+// Type-opaque holder for an argument to format(), with associated actions on
+// the type held as explicit function pointers.  This allows FormatArg's for
+// each argument to be allocated as a homogenous array inside FormatList
+// whereas a naive implementation based on inheritance does not.
 class FormatArg
 {
     public:
@@ -492,23 +469,39 @@ class FormatArg
         template<typename T>
         FormatArg(const T& value)
             : m_value((const void*)&value),
-            m_impl(&FormatArgFuncsTyped<T>::instance)
+            m_formatImpl(&formatImpl<T>),
+            m_toIntImpl(&toIntImpl<T>)
         { }
 
         void format(std::ostream& out, const char* fmtBegin,
                     const char* fmtEnd, int ntrunc) const
         {
-            m_impl->format(out, fmtBegin, fmtEnd, ntrunc, m_value);
+            m_formatImpl(out, fmtBegin, fmtEnd, ntrunc, m_value);
         }
 
         int toInt() const
         {
-            return m_impl->toInt(m_value);
+            return m_toIntImpl(m_value);
         }
 
     private:
+        template<typename T>
+        static void formatImpl(std::ostream& out, const char* fmtBegin,
+                        const char* fmtEnd, int ntrunc, const void* value)
+        {
+            formatValue(out, fmtBegin, fmtEnd, ntrunc, *(const T*)value);
+        }
+
+        template<typename T>
+        static int toIntImpl(const void* value)
+        {
+            return convertToInt<T>::invoke(*(const T*)value);
+        }
+
         const void* m_value;
-        const FormatArgFuncs* m_impl;
+        void (*m_formatImpl)(std::ostream& out, const char* fmtBegin,
+                             const char* fmtEnd, int ntrunc, const void* value);
+        int (*m_toIntImpl)(const void* value);
 };
 
 
