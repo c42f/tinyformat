@@ -35,10 +35,20 @@ tinyformat_test_cxx11: tinyformat.h tinyformat_test.cpp Makefile
 
 tinyformat.html: README.rst
 	@echo building docs...
-	rst2html README.rst > tinyformat.html
+	rst2html.py README.rst > tinyformat.html
 
 tinyformat_speed_test: tinyformat.h tinyformat_speed_test.cpp Makefile
-	$(CXX) $(CXXFLAGS) -O3 tinyformat_speed_test.cpp -o tinyformat_speed_test
+	$(CXX) $(CXXFLAGS) -O3 -DNDEBUG tinyformat_speed_test.cpp -o tinyformat_speed_test
+
+bloat_test:
+	@for opt in '' '-O3 -DNDEBUG' ; do \
+		for use in '' '-DUSE_IOSTREAMS' '-DUSE_TINYFORMAT' '-DUSE_TINYFORMAT $(CXX11FLAGS)' '-DUSE_BOOST' ; do \
+			echo ; \
+			echo ./bloat_test.sh $(CXX) $$opt $$use ; \
+			./bloat_test.sh $(CXX) $$opt $$use ; \
+		done ; \
+	done
+
 
 clean:
 	rm -f tinyformat_test_cxx98 tinyformat_test_cxx11 tinyformat_speed_test

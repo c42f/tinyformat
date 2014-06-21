@@ -3,11 +3,11 @@
 # Script to test how much bloating a large project will suffer when using
 # tinyformat, vs alternatives.  Call as
 #
-# C99 printf            :  bloat_test.sh [-O3]
-# tinyformat            :  bloat_test.sh [-O3] -DUSE_TINYFORMAT
-# tinyformat, no inlines:  bloat_test.sh [-O3] -DUSE_TINYFORMAT -DUSE_TINYFORMAT_NOINLINE
-# boost::format         :  bloat_test.sh [-O3] -DUSE_BOOST
-# std::iostream         :  bloat_test.sh [-O3] -DUSE_IOSTREAMS
+# C99 printf            :  bloat_test.sh $CXX [-O3]
+# tinyformat            :  bloat_test.sh $CXX [-O3] -DUSE_TINYFORMAT
+# tinyformat, no inlines:  bloat_test.sh $CXX [-O3] -DUSE_TINYFORMAT -DUSE_TINYFORMAT_NOINLINE
+# boost::format         :  bloat_test.sh $CXX [-O3] -DUSE_BOOST
+# std::iostream         :  bloat_test.sh $CXX [-O3] -DUSE_IOSTREAMS
 #
 # Note: to test the NOINLINE version of tinyformat, you need to remove the few
 # inline functions in the tinyformat::detail namespace, and put them into a
@@ -98,7 +98,7 @@ echo "return 0; }" >> ${prefix}main.cpp
 
 
 # Compile
-time g++ $* ${prefix}???.cpp ${prefix}main.cpp -o ${prefix}.out
+time "$@" ${prefix}???.cpp ${prefix}main.cpp -o ${prefix}.out
 ls -sh ${prefix}.out
 cp ${prefix}.out ${prefix}stripped.out
 strip ${prefix}stripped.out
