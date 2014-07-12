@@ -720,7 +720,7 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& spacePadPositi
             break;
         case 's':
             if(precisionSet)
-                ntrunc = out.precision();
+                ntrunc = (int)out.precision();
             // Make %s print booleans as "true" and "false"
             out.setf(std::ios::boolalpha);
             break;
@@ -847,10 +847,7 @@ class FormatListN : public FormatList
             m_formatterStore{FormatArg(args)...}
         { static_assert(sizeof...(args) == N, "Number of args must be N"); }
 #else // C++98 version
-        FormatListN() : FormatList(0,0) { assert(N == 0); }
-
         void init(int) {}
-
 #       define TINYFORMAT_MAKE_FORMATLIST_CONSTRUCTOR(n)       \
                                                                \
         template<TINYFORMAT_ARGTYPES(n)>                       \
@@ -871,6 +868,12 @@ class FormatListN : public FormatList
 
     private:
         FormatArg m_formatterStore[N];
+};
+
+// Special 0-arg version - MSVC says zero-sized C array in struct is nonstandard
+template<> class FormatListN<0> : public FormatList
+{
+    public: FormatListN() : FormatList(0, 0) {}
 };
 
 } // namespace detail
