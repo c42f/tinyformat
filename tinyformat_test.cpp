@@ -236,7 +236,7 @@ int unitTests()
 }
 
 
-int main(int argc, char* argv[])
+int main()
 {
     return unitTests();
 }
