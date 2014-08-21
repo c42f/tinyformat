@@ -257,7 +257,7 @@ inline void formatTruncated(std::ostream& out, const T& value, int ntrunc)
     std::ostringstream tmp;
     tmp << value;
     std::string result = tmp.str();
-    out.write(result.c_str(), std::min(ntrunc, (int)result.size()));
+    out.write(result.c_str(), std::min(ntrunc, static_cast<int>(result.size())));
 }
 #define TINYFORMAT_DEFINE_FORMAT_TRUNCATED_CSTR(type)       \
 inline void formatTruncated(std::ostream& out, type* value, int ntrunc) \
@@ -480,7 +480,7 @@ class FormatArg
 
         template<typename T>
         FormatArg(const T& value)
-            : m_value((const void*)&value),
+            : m_value(reinterpret_cast<const void*>(&value)),
             m_formatImpl(&formatImpl<T>),
             m_toIntImpl(&toIntImpl<T>)
         { }
@@ -501,13 +501,13 @@ class FormatArg
         static void formatImpl(std::ostream& out, const char* fmtBegin,
                         const char* fmtEnd, int ntrunc, const void* value)
         {
-            formatValue(out, fmtBegin, fmtEnd, ntrunc, *(const T*)value);
+            formatValue(out, fmtBegin, fmtEnd, ntrunc, *reinterpret_cast<const T*>(value));
         }
 
         template<typename T>
         static int toIntImpl(const void* value)
         {
-            return convertToInt<T>::invoke(*(const T*)value);
+            return convertToInt<T>::invoke(*reinterpret_cast<const T*>(value));
         }
 
         const void* m_value;
@@ -720,7 +720,7 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& spacePadPositi
             break;
         case 's':
             if(precisionSet)
-                ntrunc = (int)out.precision();
+                ntrunc = static_cast<int>(out.precision());
             // Make %s print booleans as "true" and "false"
             out.setf(std::ios::boolalpha);
             break;
