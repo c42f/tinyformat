@@ -85,10 +85,10 @@ struct TestExceptionDef : public std::runtime_error
 
 struct MyInt {
 public:
-    MyInt(int value) : value_(value) {}
-    int value() const { return value_; }
+    MyInt(int value) : m_value(value) {}
+    int value() const { return m_value; }
 private:
-    int value_;
+    int m_value;
 };
 
 std::ostream& operator<<(std::ostream& os, const MyInt& obj) {
@@ -238,7 +238,7 @@ int unitTests()
     oss.setf(std::ios::scientific);
     tfm::format(oss, "%f", 10.1234123412341234);
     assert(oss.str() == "10.123412");
-    
+
     // Test formatting a custom object
     MyInt myobj(42);
     CHECK_EQUAL(tfm::format("myobj: %s", myobj), "myobj: 42");
