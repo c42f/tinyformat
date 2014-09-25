@@ -237,7 +237,7 @@ int unitTests()
     oss.fill('*');
     oss.setf(std::ios::scientific);
     tfm::format(oss, "%f", 10.1234123412341234);
-    assert(oss.str() == "10.123412");
+    CHECK_EQUAL(oss.str(), "10.123412");
 
     // Test formatting a custom object
     MyInt myobj(42);
@@ -245,11 +245,20 @@ int unitTests()
 
     // Test that interface wrapping works correctly
     TestWrap wrap;
-    assert(wrap.error(10, "someformat %s:%d:%d", "asdf", 2, 4) ==
-           "10: someformat asdf:2:4");
+    CHECK_EQUAL(wrap.error(10, "someformat %s:%d:%d", "asdf", 2, 4),
+                "10: someformat asdf:2:4");
 
     TestExceptionDef ex("blah %d", 100);
-    assert(ex.what() == std::string("blah 100"));
+    CHECK_EQUAL(ex.what(), std::string("blah 100"));
+
+    // Test tfm::printf by swapping the std::cout stream buffer to capture data
+    // which would noramlly go to the stdout
+    std::ostringstream coutCapture;
+    std::streambuf* coutBuf = std::cout.rdbuf(coutCapture.rdbuf());
+    tfm::printf("%s %s %d\n", "printf", "test", "1");
+    std::cout.rdbuf(coutBuf); // restore buffer
+    CHECK_EQUAL(coutCapture.str(), "printf test 1\n");
+
     return nfailed;
 }
 
