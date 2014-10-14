@@ -256,8 +256,9 @@ int unitTests()
     std::ostringstream coutCapture;
     std::streambuf* coutBuf = std::cout.rdbuf(coutCapture.rdbuf());
     tfm::printf("%s %s %d\n", "printf", "test", "1");
+    tfm::printfln("%s %s %d", "printfln", "test", "1");
     std::cout.rdbuf(coutBuf); // restore buffer
-    CHECK_EQUAL(coutCapture.str(), "printf test 1\n");
+    CHECK_EQUAL(coutCapture.str(), "printf test 1\nprintfln test 1\n");
 
     return nfailed;
 }

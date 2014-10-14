@@ -67,7 +67,9 @@
 //                                  weekday, month, day, hour, min);
 //   std::cout << date;
 //
-// These are the three primary interface functions.
+// These are the three primary interface functions.  There is also a
+// convenience function printfln() which appends a newline to the usual result
+// of printf() for super simple logging.
 //
 //
 // User defined format functions
@@ -950,6 +952,13 @@ void printf(const char* fmt, const Args&... args)
     format(std::cout, fmt, args...);
 }
 
+template<typename... Args>
+void printfln(const char* fmt, const Args&... args)
+{
+    format(std::cout, fmt, args...);
+    std::cout << '\n';
+}
+
 
 #else // C++98 version
 
@@ -968,6 +977,12 @@ inline std::string format(const char* fmt)
 inline void printf(const char* fmt)
 {
     format(std::cout, fmt);
+}
+
+inline void printfln(const char* fmt)
+{
+    format(std::cout, fmt);
+    std::cout << '\n';
 }
 
 #define TINYFORMAT_MAKE_FORMAT_FUNCS(n)                                   \
@@ -990,6 +1005,13 @@ template<TINYFORMAT_ARGTYPES(n)>                                          \
 void printf(const char* fmt, TINYFORMAT_VARARGS(n))                       \
 {                                                                         \
     format(std::cout, fmt, TINYFORMAT_PASSARGS(n));                       \
+}                                                                         \
+                                                                          \
+template<TINYFORMAT_ARGTYPES(n)>                                          \
+void printfln(const char* fmt, TINYFORMAT_VARARGS(n))                     \
+{                                                                         \
+    format(std::cout, fmt, TINYFORMAT_PASSARGS(n));                       \
+    std::cout << '\n';                                                    \
 }
 
 TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_FORMAT_FUNCS)

@@ -80,25 +80,28 @@ main part of the tinyformat interface.  ``stream`` is the output stream,
 ``formatString`` is a format string in C99 ``printf()`` format, and the values
 to be formatted have arbitrary types::
 
-    template<typename T1, typename... Args>
+    template<typename... Args>
     void format(std::ostream& stream, const char* formatString,
-                const T1& value1, const Args&... args);
+                const Args&... args);
 
 The second version of ``format()`` is a convenience function which returns a
 ``std::string`` rather than printing onto a stream.  This function simply
 calls the main version of ``format()`` using a ``std::ostringstream``, and
 returns the resulting string::
 
-    template<typename T1, typename... Args>
-    std::string format(const char* formatString,
-                       const T1& value1, const Args&... args);
+    template<typename... Args>
+    std::string format(const char* formatString, const Args&... args);
 
-Finally, ``printf()`` is a convenience function which calls ``format()`` with
-``std::cout`` as the first argument::
+Finally, ``printf()`` and ``printfln()`` are convenience functions which call
+``format()`` with ``std::cout`` as the first argument; both have the same
+signature::
 
-    template<typename T1, typename... Args>
-    void printf(const char* formatString,
-                const T1& value1, const Args&... args);
+    template<typename... Args>
+    void printf(const char* formatString, const Args&... args);
+
+``printfln()`` is the same as ``printf()`` but appends an additional newline
+for convenience - a concession to the author's tendency to forget the newline
+when using the library for simple logging.
 
 .. [#] Generating the code to support more arguments is quite easy using the
   in-source code generator based on the excellent code generation script
