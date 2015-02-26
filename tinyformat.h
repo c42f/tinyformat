@@ -147,6 +147,10 @@ namespace tfm = tinyformat;
 #   endif
 #endif
 
+#ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
+#   include <array>
+#endif
+
 #if defined(__GLIBCXX__) && __GLIBCXX__ < 20080201
 //  std::showpos is broken on old libstdc++ as provided with OSX.  See
 //  http://gcc.gnu.org/ml/libstdc++/2007-11/msg00075.html
@@ -847,7 +851,15 @@ class FormatListN : public FormatList
         template<typename... Args>
         FormatListN(const Args&... args)
             : FormatList(&m_formatterStore[0], N),
-            m_formatterStore{FormatArg(args)...}
+            m_formatterStore
+// VS2013 needs a pair of extra braces to compile
+#ifdef _MSC_VER
+(
+#endif
+            {FormatArg(args)...}
+#ifdef _MSC_VER
+)
+#endif
         { static_assert(sizeof...(args) == N, "Number of args must be N"); }
 #else // C++98 version
         void init(int) {}
@@ -870,7 +882,11 @@ class FormatListN : public FormatList
 #endif
 
     private:
+#ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
+        std::array<FormatArg, N> m_formatterStore;
+#else // C++98 version
         FormatArg m_formatterStore[N];
+#endif
 };
 
 // Special 0-arg version - MSVC says zero-sized C array in struct is nonstandard
