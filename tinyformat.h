@@ -152,7 +152,7 @@ namespace tfm = tinyformat;
 #   if defined(_MSC_VER) && _MSC_VER <= 1800 // VS2013
 #       define TINYFORMAT_BRACED_INIT_WORKAROUND(x) (x)
 #   else
-#       define TINYFORMAT_BRACED_INIT_WORKAROUND(x) x
+#       define TINYFORMAT_BRACED_INIT_WORKAROUND(x) {x}
 #   endif
 #endif
 
