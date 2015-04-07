@@ -162,6 +162,12 @@ namespace tfm = tinyformat;
 #   define TINYFORMAT_OLD_LIBSTDCPLUSPLUS_WORKAROUND
 #endif
 
+#ifdef __APPLE__
+#   define TINYFORMAT_HIDDEN __attribute__((visibility("hidden")))
+#else
+#   define TINYFORMAT_HIDDEN
+#endif
+
 namespace tinyformat {
 
 //------------------------------------------------------------------------------
@@ -510,14 +516,14 @@ class FormatArg
 
     private:
         template<typename T>
-        static void formatImpl(std::ostream& out, const char* fmtBegin,
+        TINYFORMAT_HIDDEN static void formatImpl(std::ostream& out, const char* fmtBegin,
                         const char* fmtEnd, int ntrunc, const void* value)
         {
             formatValue(out, fmtBegin, fmtEnd, ntrunc, *static_cast<const T*>(value));
         }
 
         template<typename T>
-        static int toIntImpl(const void* value)
+        TINYFORMAT_HIDDEN static int toIntImpl(const void* value)
         {
             return convertToInt<T>::invoke(*static_cast<const T*>(value));
         }
