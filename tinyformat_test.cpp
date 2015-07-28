@@ -100,7 +100,7 @@ std::ostream& operator<<(std::ostream& os, const MyInt& obj) {
 int unitTests()
 {
     int nfailed = 0;
-#   ifdef _MSC_VER
+#   if defined(_MSC_VER) && _MSC_VER < 1900 // VC++ older than 2015
     // floats are printed with three digit exponents on windows, which messes
     // up the tests.  Turn this off for consistency:
     _set_output_format(_TWO_DIGIT_EXPONENT);
