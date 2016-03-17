@@ -844,7 +844,7 @@ class FormatList
         friend void vformat(std::ostream& out, const char* fmt,
                             const FormatList& list);
 
-    private:
+    protected:
         const detail::FormatArg* m_formatters;
         int m_N;
 };
@@ -863,9 +863,12 @@ class FormatListN : public FormatList
 #ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
         template<typename... Args>
         FormatListN(const Args&... args)
-            : FormatList(&m_formatterStore[0], N),
+            : FormatList(nullptr, N),
             m_formatterStore TINYFORMAT_BRACED_INIT_WORKAROUND({ FormatArg(args)... })
-        { static_assert(sizeof...(args) == N, "Number of args must be N"); }
+        {
+            static_assert(sizeof...(args) == N, "Number of args must be N");
+            m_formatters = &m_formatterStore[0];
+        }
 #else // C++98 version
         void init(int) {}
 #       define TINYFORMAT_MAKE_FORMATLIST_CONSTRUCTOR(n)       \
