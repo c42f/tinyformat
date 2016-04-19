@@ -552,10 +552,10 @@ inline const char* printFormatStringLiteral(std::ostream& out, const char* fmt)
         switch(*c)
         {
             case '\0':
-                out.write(fmt, static_cast<std::streamsize>(c - fmt));
+                out.write(fmt, c - fmt);
                 return c;
             case '%':
-                out.write(fmt, static_cast<std::streamsize>(c - fmt));
+                out.write(fmt, c - fmt);
                 if(*(c+1) != '%')
                     return c;
                 // for "%%", tack trailing % onto next literal section.
