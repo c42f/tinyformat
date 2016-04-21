@@ -561,6 +561,8 @@ inline const char* printFormatStringLiteral(std::ostream& out, const char* fmt)
                 // for "%%", tack trailing % onto next literal section.
                 fmt = ++c;
                 break;
+            default:
+                break;
         }
     }
 }
@@ -630,6 +632,8 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& spacePadPositi
                 spacePadPositive = false;
                 widthExtra = 1;
                 continue;
+            default:
+                break;
         }
         break;
     }
@@ -743,6 +747,8 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& spacePadPositi
             TINYFORMAT_ERROR("tinyformat: Conversion spec incorrectly "
                              "terminated by end of string");
             return c;
+        default:
+            break;
     }
     if(intConversion && precisionSet && !widthSet)
     {
