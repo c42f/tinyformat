@@ -268,7 +268,7 @@ inline void formatTruncated(std::ostream& out, const T& value, int ntrunc)
     std::ostringstream tmp;
     tmp << value;
     std::string result = tmp.str();
-    out.write(result.c_str(), std::min(ntrunc, static_cast<int>(result.size())));
+    out.write(result.c_str(), (std::min)(ntrunc, static_cast<int>(result.size())));
 }
 #define TINYFORMAT_DEFINE_FORMAT_TRUNCATED_CSTR(type)       \
 inline void formatTruncated(std::ostream& out, type* value, int ntrunc) \
