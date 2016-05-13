@@ -266,5 +266,13 @@ int unitTests()
 
 int main()
 {
-    return unitTests();
+    try
+    {
+        return unitTests();
+    }
+    catch (std::runtime_error & e)
+    {
+        std::cout << "Failure due to uncaught exception: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 }
