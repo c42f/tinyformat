@@ -5,16 +5,13 @@ sudo: false
 os:
   - linux
 
-compiler:
-  - g++-4.9
-
 script:
-  - make CXX=g++-4.9 test
+  - cmake -P test_matrix.cmake
 
 addons:
   apt:
     sources:
-    - ubuntu-toolchain-r-test
+      - ubuntu-toolchain-r-test
     packages:
-    - gcc-4.9
-    - g++-4.9
+      - g++-5
+      - clang
