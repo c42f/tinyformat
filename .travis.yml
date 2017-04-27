@@ -5,8 +5,22 @@ sudo: false
 os:
   - linux
 
+env:
+  matrix:
+    - CXX_STD=c++98 BUILD_TYPE=Release
+    - CXX_STD=c++11 BUILD_TYPE=Release
+    - CXX_STD=c++98 BUILD_TYPE=Debug
+    - CXX_STD=c++11 BUILD_TYPE=Debug
+
+compiler:
+  - g++-5
+  - clang++
+
 script:
-  - cmake -P test_matrix.cmake
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCXX_STD=$CXX_STD ..
+  - make testall
 
 addons:
   apt:
@@ -15,3 +29,4 @@ addons:
     packages:
       - g++-5
       - clang
+
