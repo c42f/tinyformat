@@ -156,6 +156,34 @@ matrix:
           packages:
             - clang++-3.8
 
+    - os: osx
+      compiler: clang
+      env:
+        - CXX_STD=c++98
+        - COMPILER=clang++
+        - BUILD_TYPE=Release
+
+    - os: osx
+      compiler: clang
+      env:
+        - CXX_STD=c++11
+        - COMPILER=clang++
+        - BUILD_TYPE=Release
+
+    - os: osx
+      compiler: clang
+      env:
+        - CXX_STD=c++98
+        - COMPILER=clang++
+        - BUILD_TYPE=Debug
+
+    - os: osx
+      compiler: clang
+      env:
+        - CXX_STD=c++11
+        - COMPILER=clang++
+        - BUILD_TYPE=Debug
+
 
 before_script:
   - cmake --version
