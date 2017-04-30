@@ -842,6 +842,7 @@ class FormatList
                             const FormatList& list);
 
     private:
+        FormatList(const FormatList& other);
         const detail::FormatArg* m_formatters;
         int m_N;
 };
@@ -857,6 +858,11 @@ template<int N>
 class FormatListN : public FormatList
 {
     public:
+        FormatListN(const FormatListN<N>& other)
+              :FormatList(&m_formatterStore[0], N)
+        {
+              std::copy(other.m_formatterStore, other.m_formatterStore+N, m_formatterStore);
+        }
 #ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
         template<typename... Args>
         FormatListN(const Args&... args)
@@ -890,7 +896,11 @@ class FormatListN : public FormatList
 // Special 0-arg version - MSVC says zero-sized C array in struct is nonstandard
 template<> class FormatListN<0> : public FormatList
 {
-    public: FormatListN() : FormatList(0, 0) {}
+    public:
+        FormatListN() : FormatList(0, 0) {}
+        FormatListN(const FormatListN<0>& other)
+             :FormatList(0, 0)
+        {}
 };
 
 } // namespace detail
