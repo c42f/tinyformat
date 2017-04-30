@@ -248,6 +248,10 @@ int unitTests()
     MyInt myobj(42);
     CHECK_EQUAL(tfm::format("myobj: %s", myobj), "myobj: 42");
 
+    // Test formatting a custom object
+    MyInt myobj(42);
+    CHECK_EQUAL(tfm::format("myobj: %s", myobj), "myobj: 42");
+
     // Test that interface wrapping works correctly
     TestWrap wrap;
     CHECK_EQUAL(wrap.error(10, "someformat %s:%d:%d", "asdf", 2, 4),
