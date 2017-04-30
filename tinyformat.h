@@ -486,6 +486,9 @@ namespace detail {
 // whereas a naive implementation based on inheritance does not.
 class FormatArg
 {
+    // FormatIterator contains a pointer so set the copy constructor private (prevent warning with gcc and -Weffc++)
+    FormatIterator(const FormatIterator&);
+    FormatIterator& operator=(const FormatIterator&);
     public:
         FormatArg() {}
 
