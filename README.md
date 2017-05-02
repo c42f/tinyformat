@@ -13,8 +13,11 @@ of the type of `s`, tinyformat might be for you.  Design goals include:
 * Augment rather than replace the standard stream formatting mechanism
 * C++98 support, with optional C++11 niceties
 
+Build status, master branch:
+[![Linux/OSX build](https://travis-ci.org/c42f/tinyformat.svg?branch=master)](https://travis-ci.org/c42f/tinyformat)
+[![Windows build](https://ci.appveyor.com/api/projects/status/rwxqhhy6v5m0p1aq/branch/master?svg=true)](https://ci.appveyor.com/project/c42f/tinyformat/branch/master)
 
-## Example usage
+## Quickstart
 
 To print a date to `std::cout`:
 
