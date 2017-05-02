@@ -19,7 +19,8 @@ environment:
   matrix:
     - COMPILER: "Visual Studio 12 Win64"
     - COMPILER: "Visual Studio 14 Win64"
-    #- COMPILER: "Visual Studio 15 Win64"  # Not in appveyor standard image yet
+    - COMPILER: "Visual Studio 15 Win64"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
 
 # build platform, i.e. x86, x64, Any CPU.
 platform:
