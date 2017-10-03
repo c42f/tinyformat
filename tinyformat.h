@@ -488,9 +488,9 @@ class FormatArg
 {
     public:
         FormatArg()
-            : m_value(nullptr),
-            m_formatImpl(nullptr),
-            m_toIntImpl(nullptr)
+            : m_value(NULL),
+            m_formatImpl(NULL),
+            m_toIntImpl(NULL)
         { }
 
         template<typename T>
@@ -847,7 +847,6 @@ inline void formatImpl(std::ostream& out, const char* fmt,
 class FormatList
 {
     public:
-        FormatList() = delete;
         FormatList(detail::FormatArg* formatters, int N)
             : m_formatters(formatters), m_N(N) { }
 
@@ -855,6 +854,7 @@ class FormatList
                             const FormatList& list);
 
     private:
+        FormatList();
         const detail::FormatArg* m_formatters;
         int m_N;
 };
