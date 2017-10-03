@@ -487,7 +487,11 @@ namespace detail {
 class FormatArg
 {
     public:
-        FormatArg() {}
+        FormatArg()
+            : m_value(nullptr),
+            m_formatImpl(nullptr),
+            m_toIntImpl(nullptr)
+        { }
 
         template<typename T>
         FormatArg(const T& value)
@@ -499,11 +503,15 @@ class FormatArg
         void format(std::ostream& out, const char* fmtBegin,
                     const char* fmtEnd, int ntrunc) const
         {
+            assert(m_value);
+            assert(m_formatImpl);
             m_formatImpl(out, fmtBegin, fmtEnd, ntrunc, m_value);
         }
 
         int toInt() const
         {
+            assert(m_value);
+            assert(m_toIntImpl);
             return m_toIntImpl(m_value);
         }
 
@@ -839,6 +847,7 @@ inline void formatImpl(std::ostream& out, const char* fmt,
 class FormatList
 {
     public:
+        FormatList() = delete;
         FormatList(detail::FormatArg* formatters, int N)
             : m_formatters(formatters), m_N(N) { }
 
