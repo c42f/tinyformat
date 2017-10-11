@@ -955,6 +955,7 @@ inline void vformat(std::ostream& out, const char* fmt, FormatListRef list)
 #ifdef TINYFORMAT_USE_VARIADIC_TEMPLATES
 
 /// Format list of arguments to the stream according to given format string.
+/// This honors the stream's existing locale conventions.
 template<typename... Args>
 void format(std::ostream& out, const char* fmt, const Args&... args)
 {
@@ -962,7 +963,7 @@ void format(std::ostream& out, const char* fmt, const Args&... args)
 }
 
 /// Format list of arguments according to the given format string and return
-/// the result as a string.
+/// the result as a string, honoring the current global native locale.
 template<typename... Args>
 std::string format(const char* fmt, const Args&... args)
 {
@@ -972,6 +973,7 @@ std::string format(const char* fmt, const Args&... args)
 }
 
 /// Format list of arguments to std::cout, according to the given format string
+/// This honors std::out's existing locale conventions.
 template<typename... Args>
 void printf(const char* fmt, const Args&... args)
 {
@@ -982,6 +984,44 @@ template<typename... Args>
 void printfln(const char* fmt, const Args&... args)
 {
     format(std::cout, fmt, args...);
+    std::cout << '\n';
+}
+
+
+/// Formatting functions ending in _c force the classic "C" locale (i.e. '.'
+/// for decimal). They may be more expensive than the default functions,
+/// but they are useful when you MUST be locale-independent (like for
+/// persistent saved output when you always need identical formatting
+/// that should not vary, or be mis-parsed if written by a computer set
+/// up for one locale but read by a computer with a different locale).
+template<typename... Args>
+void format_c(std::ostream& out, const char* fmt, const Args&... args)
+{
+    // Force "C" locale but save the previous one asssociated with the stream
+    std::locale oldloc = out.imbue (std::locale::classic());
+    vformat(out, fmt, makeFormatList(args...));
+    out.imbue (oldloc);  // restore the original locale
+}
+
+template<typename... Args>
+std::string format_c(const char* fmt, const Args&... args)
+{
+    std::ostringstream oss;
+    oss.imbue (std::locale::classic()); // force "C" locale with '.' decimal
+    format(oss, fmt, args...);
+    return oss.str();
+}
+
+template<typename... Args>
+void printf_c(const char* fmt, const Args&... args)
+{
+    format_c(std::cout, fmt, args...);
+}
+
+template<typename... Args>
+void printfln_c(const char* fmt, const Args&... args)
+{
+    format_c(std::cout, fmt, args...);
     std::cout << '\n';
 }
 
@@ -1011,6 +1051,31 @@ inline void printfln(const char* fmt)
     std::cout << '\n';
 }
 
+inline void format_c(std::ostream& out, const char* fmt)
+{
+    std::locale oldloc = out.imbue (std::locale::classic());
+    vformat(out, fmt, makeFormatList());
+    out.imbue (oldloc);  // restore the original locale
+}
+
+inline std::string format_c(const char* fmt)
+{
+    std::ostringstream oss;
+    format_c(oss, fmt);
+    return oss.str();
+}
+
+inline void printf_c(const char* fmt)
+{
+    format_c(std::cout, fmt);
+}
+
+inline void printfln_c(const char* fmt)
+{
+    format_c(std::cout, fmt);
+    std::cout << '\n';
+}
+
 #define TINYFORMAT_MAKE_FORMAT_FUNCS(n)                                   \
                                                                           \
 template<TINYFORMAT_ARGTYPES(n)>                                          \
@@ -1037,6 +1102,36 @@ template<TINYFORMAT_ARGTYPES(n)>                                          \
 void printfln(const char* fmt, TINYFORMAT_VARARGS(n))                     \
 {                                                                         \
     format(std::cout, fmt, TINYFORMAT_PASSARGS(n));                       \
+    std::cout << '\n';                                                    \
+}                                                                         \
+                                                                          \
+template<TINYFORMAT_ARGTYPES(n)>                                          \
+void format_c(std::ostream& out, const char* fmt, TINYFORMAT_VARARGS(n))  \
+{                                                                         \
+    std::locale oldloc = out.imbue (std::locale::classic());              \
+    vformat(out, fmt, makeFormatList(TINYFORMAT_PASSARGS(n)));            \
+    out.imbue (oldloc);                                                   \
+}                                                                         \
+                                                                          \
+template<TINYFORMAT_ARGTYPES(n)>                                          \
+std::string format_c(const char* fmt, TINYFORMAT_VARARGS(n))              \
+{                                                                         \
+    std::ostringstream oss;                                               \
+    oss.imbue (std::locale::classic());                                   \
+    format(oss, fmt, TINYFORMAT_PASSARGS(n));                             \
+    return oss.str();                                                     \
+}                                                                         \
+                                                                          \
+template<TINYFORMAT_ARGTYPES(n)>                                          \
+void printf_c(const char* fmt, TINYFORMAT_VARARGS(n))                     \
+{                                                                         \
+    format_c(std::cout, fmt, TINYFORMAT_PASSARGS(n));                     \
+}                                                                         \
+                                                                          \
+template<TINYFORMAT_ARGTYPES(n)>                                          \
+void printfln_c(const char* fmt, TINYFORMAT_VARARGS(n))                   \
+{                                                                         \
+    format_c(std::cout, fmt, TINYFORMAT_PASSARGS(n));                     \
     std::cout << '\n';                                                    \
 }
 
