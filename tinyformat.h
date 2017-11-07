@@ -33,6 +33,7 @@
 //
 // * Type safety and extensibility for user defined types.
 // * C99 printf() compatibility, to the extent possible using std::ostream
+// * POSIX extension for positional arguments
 // * Simplicity and minimalism.  A single header file to include and distribute
 //   with your projects.
 // * Augment rather than replace the standard stream formatting mechanism
@@ -42,7 +43,7 @@
 // Main interface example usage
 // ----------------------------
 //
-// To print a date to std::cout:
+// To print a date to std::cout for American usage:
 //
 //   std::string weekday = "Wednesday";
 //   const char* month = "July";
@@ -51,6 +52,14 @@
 //   int min = 44;
 //
 //   tfm::printf("%s, %s %d, %.2d:%.2d\n", weekday, month, day, hour, min);
+//
+// POSIX extension for positional arguments is available.
+// The ability to rearrange formatting arguments is an important feature
+// for localization because the word order may vary in different languages.
+//
+// Previous example for German usage. Arguments are reordered:
+//
+//   tfm::printf("%1$s, %3$d. %2$s, %4$d:%5$.2d\n", weekday, month, day, hour, min);
 //
 // The strange types here emphasize the type safety of the interface; it is
 // possible to print a std::string using the "%s" conversion, and a
@@ -579,14 +588,38 @@ inline const char* printFormatStringLiteral(std::ostream& out, const char* fmt)
 // Parse a format string and set the stream state accordingly.
 //
 // The format mini-language recognized here is meant to be the one from C99,
-// with the form "%[flags][width][.precision][length]type".
+// with the form "%[flags][width][.precision][length]type" with POSIX
+// positional arguments extension.
+//
+// POSIX positional arguments extension:
+// Conversions can be applied to the nth argument after the format in
+// the argument list, rather than to the next unused argument. In this case,
+// the conversion specifier character % (see below) is replaced by the sequence
+// "%n$", where n is a decimal integer in the range [1,{NL_ARGMAX}],
+// giving the position of the argument in the argument list. This feature
+// provides for the definition of format strings that select arguments
+// in an order appropriate to specific languages.
+//
+// The format can contain either numbered argument conversion specifications
+// (that is, "%n$" and "*m$"), or unnumbered argument conversion specifications
+// (that is, % and * ), but not both. The only exception to this is that %%
+// can be mixed with the "%n$" form. The results of mixing numbered and
+// unnumbered argument specifications in a format string are undefined.
+// When numbered argument specifications are used, specifying the Nth argument
+// requires that all the leading arguments, from the first to the (N-1)th,
+// are specified in the format string.
+//
+// In format strings containing the "%n$" form of conversion specification,
+// numbered arguments in the argument list can be referenced from the format
+// string as many times as required.
 //
 // Formatting options which can't be natively represented using the ostream
 // state are returned in spacePadPositive (for space padded positive numbers)
 // and ntrunc (for truncating conversions).  argIndex is incremented if
 // necessary to pull out variable width and precision .  The function returns a
 // pointer to the character after the end of the current format spec.
-inline const char* streamStateFromFormat(std::ostream& out, bool& spacePadPositive,
+inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode,
+                                         bool& spacePadPositive,
                                          int& ntrunc, const char* fmtStart,
                                          const detail::FormatArg* formatters,
                                          int& argIndex, int numFormatters)
@@ -608,66 +641,129 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& spacePadPositi
     bool widthSet = false;
     int widthExtra = 0;
     const char* c = fmtStart + 1;
-    // 1) Parse flags
-    for(;; ++c)
-    {
-        switch(*c)
-        {
-            case '#':
-                out.setf(std::ios::showpoint | std::ios::showbase);
-                continue;
-            case '0':
-                // overridden by left alignment ('-' flag)
-                if(!(out.flags() & std::ios::left))
-                {
-                    // Use internal padding so that numeric values are
-                    // formatted correctly, eg -00010 rather than 000-10
-                    out.fill('0');
-                    out.setf(std::ios::internal, std::ios::adjustfield);
-                }
-                continue;
-            case '-':
-                out.fill(' ');
-                out.setf(std::ios::left, std::ios::adjustfield);
-                continue;
-            case ' ':
-                // overridden by show positive sign, '+' flag.
-                if(!(out.flags() & std::ios::showpos))
-                    spacePadPositive = true;
-                continue;
-            case '+':
-                out.setf(std::ios::showpos);
-                spacePadPositive = false;
-                widthExtra = 1;
-                continue;
-            default:
-                break;
-        }
-        break;
-    }
-    // 2) Parse width
+
+    // 1) Parse an argument index (if followed by '$') or a width possibly
+    // preceded with '0' flag.
     if(*c >= '0' && *c <= '9')
     {
-        widthSet = true;
-        out.width(parseIntAndAdvance(c));
-    }
-    if(*c == '*')
-    {
-        widthSet = true;
-        int width = 0;
-        if(argIndex < numFormatters)
-            width = formatters[argIndex++].toInt();
-        else
-            TINYFORMAT_ERROR("tinyformat: Not enough arguments to read variable width");
-        if(width < 0)
-        {
-            // negative widths correspond to '-' flag set
-            out.fill(' ');
-            out.setf(std::ios::left, std::ios::adjustfield);
-            width = -width;
+        const char tmpc = *c;
+        int value = parseIntAndAdvance(c);
+        if(*c == '$')
+        {  // value is an argument index
+            if(value > 0 && value <= numFormatters)
+            {
+                argIndex = value - 1;
+            }
+            else
+            {
+                TINYFORMAT_ERROR("tinyformat: Positional argument out of range");
+            }
+            ++c;
+            positionalMode = true;
         }
-        out.width(width);
-        ++c;
+        else if(positionalMode)
+        {
+            TINYFORMAT_ERROR("tinyformat: Non-positional argument used after a positional one");
+        }
+        else
+        {
+            if(tmpc == '0')
+            {
+                // Use internal padding so that numeric values are
+                // formatted correctly, eg -00010 rather than 000-10
+                out.fill('0');
+                out.setf(std::ios::internal, std::ios::adjustfield);
+            }
+            if(value != 0)
+            {
+                // Nonzero value means that we parsed width.
+                widthSet = true;
+                out.width(value);
+            }
+        }
+    }
+    else if(positionalMode)
+    {
+        TINYFORMAT_ERROR("tinyformat: Non-positional argument used after a positional one");
+    }
+    // 2) Parse flags and width if we did not do it in previous step.
+    if(!widthSet)
+    {
+        // Parse flags
+        for(;; ++c)
+        {
+            switch(*c)
+            {
+                case '#':
+                    out.setf(std::ios::showpoint | std::ios::showbase);
+                    continue;
+                case '0':
+                    // overridden by left alignment ('-' flag)
+                    if(!(out.flags() & std::ios::left))
+                    {
+                        // Use internal padding so that numeric values are
+                        // formatted correctly, eg -00010 rather than 000-10
+                        out.fill('0');
+                        out.setf(std::ios::internal, std::ios::adjustfield);
+                    }
+                    continue;
+                case '-':
+                    out.fill(' ');
+                    out.setf(std::ios::left, std::ios::adjustfield);
+                    continue;
+                case ' ':
+                    // overridden by show positive sign, '+' flag.
+                    if(!(out.flags() & std::ios::showpos))
+                        spacePadPositive = true;
+                    continue;
+                case '+':
+                    out.setf(std::ios::showpos);
+                    spacePadPositive = false;
+                    widthExtra = 1;
+                    continue;
+                default:
+                    break;
+            }
+            break;
+        }
+        // Parse width
+        if(*c >= '0' && *c <= '9')
+        {
+            widthSet = true;
+            out.width(parseIntAndAdvance(c));
+        }
+        else if(*c == '*')
+        {
+            widthSet = true;
+            int width = 0;
+            if(positionalMode)
+            {
+                ++c;
+                int pos = parseIntAndAdvance(c) - 1;
+                if(*c != '$')
+                    TINYFORMAT_ERROR("tinyformat: Non-positional argument used after a positional one");
+                if(pos >= 0 && pos < numFormatters)
+                    width = formatters[pos].toInt();
+                else
+                    TINYFORMAT_ERROR("tinyformat: Positional argument out of range");
+            }
+            else
+            {
+                if(argIndex < numFormatters)
+                    width = formatters[argIndex++].toInt();
+                else
+                    TINYFORMAT_ERROR("tinyformat: Not enough arguments to read variable width");
+            }
+            if(width < 0)
+            {
+                // negative widths correspond to '-' flag set
+                out.fill(' ');
+                out.setf(std::ios::left, std::ios::adjustfield);
+                width = -width;
+            }
+            out.width(width);
+            ++c;
+        }
     }
     // 3) Parse precision
     if(*c == '.')
@@ -677,10 +773,24 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& spacePadPositi
         if(*c == '*')
         {
             ++c;
-            if(argIndex < numFormatters)
-                precision = formatters[argIndex++].toInt();
+            if(positionalMode)
+            {
+                int pos = parseIntAndAdvance(c) - 1;
+                if(*c != '$')
+                    TINYFORMAT_ERROR("tinyformat: Non-positional argument used after a positional one");
+                if(pos >= 0 && pos < numFormatters)
+                    precision = formatters[pos].toInt();
+                else
+                    TINYFORMAT_ERROR("tinyformat: Positional argument out of range");
+                ++c;
+            }
             else
-                TINYFORMAT_ERROR("tinyformat: Not enough arguments to read variable precision");
+            {
+                if(argIndex < numFormatters)
+                    precision = formatters[argIndex++].toInt();
+                else
+                    TINYFORMAT_ERROR("tinyformat: Not enough arguments to read variable precision");
+            }
         }
         else
         {
@@ -787,13 +897,16 @@ inline void formatImpl(std::ostream& out, const char* fmt,
     std::ios::fmtflags origFlags = out.flags();
     char origFill = out.fill();
 
-    for (int argIndex = 0; argIndex < numFormatters; ++argIndex)
+    bool positionalMode = false;
+    for(int argIndex = 0; positionalMode || argIndex < numFormatters; ++argIndex)
     {
         // Parse the format string
         fmt = printFormatStringLiteral(out, fmt);
+        if(positionalMode && *fmt == '\0')
+            break;
         bool spacePadPositive = false;
         int ntrunc = -1;
-        const char* fmtEnd = streamStateFromFormat(out, spacePadPositive, ntrunc, fmt,
+        const char* fmtEnd = streamStateFromFormat(out, positionalMode, spacePadPositive, ntrunc, fmt,
                                                    formatters, argIndex, numFormatters);
         if (argIndex >= numFormatters)
         {
