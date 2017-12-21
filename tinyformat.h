@@ -133,15 +133,16 @@ namespace tfm = tinyformat;
 //------------------------------------------------------------------------------
 // Implementation details.
 #include <algorithm>
-#include <cassert>
 #include <iostream>
 #include <sstream>
 
 #ifndef TINYFORMAT_ASSERT
+#   include <cassert>
 #   define TINYFORMAT_ASSERT(cond) assert(cond)
 #endif
 
 #ifndef TINYFORMAT_ERROR
+#   include <cassert>
 #   define TINYFORMAT_ERROR(reason) assert(0 && reason)
 #endif
 
