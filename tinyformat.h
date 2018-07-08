@@ -153,13 +153,13 @@ namespace tfm = tinyformat;
 #endif
 
 #if defined(__GLIBCXX__) && __GLIBCXX__ < 20080201
-//  std::showpos is broken on old libstdc++ as provided with OSX.  See
+//  std::showpos is broken on old libstdc++ as provided with macOS.  See
 //  http://gcc.gnu.org/ml/libstdc++/2007-11/msg00075.html
 #   define TINYFORMAT_OLD_LIBSTDCPLUSPLUS_WORKAROUND
 #endif
 
 #ifdef __APPLE__
-// Workaround OSX linker warning: xcode uses different default symbol
+// Workaround macOS linker warning: xcode uses different default symbol
 // visibilities for static libs vs executables (see issue #25)
 #   define TINYFORMAT_HIDDEN __attribute__((visibility("hidden")))
 #else
