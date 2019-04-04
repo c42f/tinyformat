@@ -487,7 +487,7 @@ namespace detail {
 
 // Type-opaque holder for an argument to format(), with associated actions on
 // the type held as explicit function pointers.  This allows FormatArg's for
-// each argument to be allocated as a homogenous array inside FormatList
+// each argument to be allocated as a homogeneous array inside FormatList
 // whereas a naive implementation based on inheritance does not.
 class FormatArg
 {
@@ -735,6 +735,12 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& spacePadPositi
         case 'f':
             out.setf(std::ios::fixed, std::ios::floatfield);
             break;
+        case 'A':
+            out.setf(std::ios::uppercase);
+            // Falls through
+        case 'a':
+            out.setf(std::ios::fixed | std::ios::scientific, std::ios::floatfield);
+            break;
         case 'G':
             out.setf(std::ios::uppercase);
             // Falls through
@@ -743,17 +749,13 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& spacePadPositi
             // As in boost::format, let stream decide float format.
             out.flags(out.flags() & ~std::ios::floatfield);
             break;
-        case 'a': case 'A':
-            TINYFORMAT_ERROR("tinyformat: the %a and %A conversion specs "
-                             "are not supported");
-            break;
         case 'c':
             // Handled as special case inside formatValue()
             break;
         case 's':
             if(precisionSet)
                 ntrunc = static_cast<int>(out.precision());
-            // Make %s print booleans as "true" and "false"
+            // Make %s print Booleans as "true" and "false"
             out.setf(std::ios::boolalpha);
             break;
         case 'n':
