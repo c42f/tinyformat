@@ -165,7 +165,6 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%.4d", 10), "0010");
     CHECK_EQUAL(tfm::format("%10.4f", 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%.f", 10.1), "10");
-    CHECK_EQUAL(tfm::format("%.a", -1.671111047267913818359375), "-0x1.abcdefp+0"); // precision ignored for hex float as required
     CHECK_EQUAL(tfm::format("%14a", 1.671111047267913818359375), " 0x1.abcdefp+0");
     CHECK_EQUAL(tfm::format("%.2s", "asdf"), "as"); // strings truncate to precision
     CHECK_EQUAL(tfm::format("%.2s", std::string("asdf")), "as");
