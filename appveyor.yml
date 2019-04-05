@@ -48,5 +48,5 @@ build_script:
 
 test_script:
   # cmake testall target has problems finding the correct configuration, so use ctest directly.
-  - ctest -C %CONFIGURATION%
+  - ctest -VV -C %CONFIGURATION%
 
