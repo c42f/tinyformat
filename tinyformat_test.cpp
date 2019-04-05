@@ -122,8 +122,8 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%E", -1.23456E10), "-1.234560E+10");
     CHECK_EQUAL(tfm::format("%f", -9.8765), "-9.876500");
     CHECK_EQUAL(tfm::format("%F", 9.8765), "9.876500");
-    CHECK_EQUAL(tfm::format("%a", -9.75), "-0x1.38p+3");
-    CHECK_EQUAL(tfm::format("%A", 9.75), "0X1.38P+3");
+    CHECK_EQUAL(tfm::format("%a", -1.671111047267913818359375), "-0x1.abcdefp+0");
+    CHECK_EQUAL(tfm::format("%A", 1.671111047267913818359375), "0X1.ABCDEFP+0");
     CHECK_EQUAL(tfm::format("%g", 10), "10");
     CHECK_EQUAL(tfm::format("%G", 100), "100");
     CHECK_EQUAL(tfm::format("%c", 65), "A");
@@ -165,8 +165,8 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%.4d", 10), "0010");
     CHECK_EQUAL(tfm::format("%10.4f", 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%.f", 10.1), "10");
-    CHECK_EQUAL(tfm::format("%.a", -9.75), "-0x1.38p+3"); // precision ignored for hex float as required
-    CHECK_EQUAL(tfm::format("%10a", 9.75), " 0x1.38p+3");
+    CHECK_EQUAL(tfm::format("%.a", -1.671111047267913818359375), "-0x1.abcdefp+0"); // precision ignored for hex float as required
+    CHECK_EQUAL(tfm::format("%14a", 1.671111047267913818359375), " 0x1.abcdefp+0");
     CHECK_EQUAL(tfm::format("%.2s", "asdf"), "as"); // strings truncate to precision
     CHECK_EQUAL(tfm::format("%.2s", std::string("asdf")), "as");
 //    // Test variable precision & width
