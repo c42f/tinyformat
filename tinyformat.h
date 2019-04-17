@@ -842,6 +842,12 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
             out.setf(std::ios::uppercase);
             // Falls through
         case 'a':
+#           ifdef _MSC_VER
+            // Workaround https://developercommunity.visualstudio.com/content/problem/520472/hexfloat-stream-output-does-not-ignore-precision-a.html
+            // by always setting maximum precision on MSVC to avoid precision
+            // loss for doubles.
+            out.precision(13);
+#           endif
             out.setf(std::ios::fixed | std::ios::scientific, std::ios::floatfield);
             break;
         case 'G':

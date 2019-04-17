@@ -122,8 +122,13 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%E", -1.23456E10), "-1.234560E+10");
     CHECK_EQUAL(tfm::format("%f", -9.8765), "-9.876500");
     CHECK_EQUAL(tfm::format("%F", 9.8765), "9.876500");
+#   ifndef _MSC_VER
     CHECK_EQUAL(tfm::format("%a", -1.671111047267913818359375), "-0x1.abcdefp+0");
-    CHECK_EQUAL(tfm::format("%A", 1.671111047267913818359375), "0X1.ABCDEFP+0");
+    CHECK_EQUAL(tfm::format("%A",  1.671111047267913818359375),  "0X1.ABCDEFP+0");
+#   else
+    CHECK_EQUAL(tfm::format("%a", -1.671111047267913818359375), "-0x1.abcdef0000000p+0");
+    CHECK_EQUAL(tfm::format("%A",  1.671111047267913818359375),  "0X1.ABCDEF0000000P+0");
+#   endif
     CHECK_EQUAL(tfm::format("%g", 10), "10");
     CHECK_EQUAL(tfm::format("%G", 100), "100");
     CHECK_EQUAL(tfm::format("%c", 65), "A");
@@ -165,9 +170,17 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%.4d", 10), "0010");
     CHECK_EQUAL(tfm::format("%10.4f", 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%.f", 10.1), "10");
-	CHECK_EQUAL(tfm::format("%.13a", 0.1), "0x1.999999999999ap-4");
-	CHECK_EQUAL(tfm::format("%14a", 1.671111047267913818359375), " 0x1.abcdefp+0");
-	CHECK_EQUAL(tfm::format("%.2s", "asdf"), "as"); // strings truncate to precision
+    // Per C++ spec, iostreams ignore the precision for "%a" to avoid precision
+    // loss. This is a printf incompatibility.
+#   ifndef _MSC_VER
+    CHECK_EQUAL(tfm::format("%.1a", 1.13671875), "0x1.23p+0");
+    CHECK_EQUAL(tfm::format("%14a", 1.671111047267913818359375), " 0x1.abcdefp+0");
+#   else
+    // MSVC workaround
+    CHECK_EQUAL(tfm::format("%.1a", 1.13671875), "0x1.2300000000000p+0");
+    CHECK_EQUAL(tfm::format("%21a", 1.671111047267913818359375), " 0x1.abcdef0000000p+0");
+#   endif
+    CHECK_EQUAL(tfm::format("%.2s", "asdf"), "as"); // strings truncate to precision
     CHECK_EQUAL(tfm::format("%.2s", std::string("asdf")), "as");
     // Test variable precision & width
     CHECK_EQUAL(tfm::format("%*.4f", 10, 1234.1234567890), " 1234.1235");
