@@ -193,10 +193,9 @@ Here's a list of known incompatibilities:
 
 * The `"%a"` and `"%A"` hexadecimal floating point conversions ignore precision
   as stream output of hexfloat (introduced in C++11) ignores precision, always
-  outputting the minimum number of digits required for exact representation
-  (MSVC incorrectly honors stream precision - the default precision of 6 digits
-  risks losing precision by truncation so to guarantee lossless roundtrip
-  conversion "%.13a" will output full precision padded with 0's as needed).
+  outputting the minimum number of digits required for exact representation.
+  MSVC incorrectly honors stream precision, so we force precision to 13 in this
+  case to guarentee lossless roundtrip conversion.
 * The precision for integer conversions cannot be supported by the iostreams
   state independently of the field width.  (Note: **this is only a
   problem for certain obscure integer conversions**; float conversions like
