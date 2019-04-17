@@ -122,8 +122,13 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%E", -1.23456E10), "-1.234560E+10");
     CHECK_EQUAL(tfm::format("%f", -9.8765), "-9.876500");
     CHECK_EQUAL(tfm::format("%F", 9.8765), "9.876500");
+#   ifndef _MSC_VER
     CHECK_EQUAL(tfm::format("%a", -1.671111047267913818359375), "-0x1.abcdefp+0");
-    CHECK_EQUAL(tfm::format("%A", 1.671111047267913818359375), "0X1.ABCDEFP+0");
+    CHECK_EQUAL(tfm::format("%A",  1.671111047267913818359375),  "0X1.ABCDEFP+0");
+#   else
+    CHECK_EQUAL(tfm::format("%a", -1.671111047267913818359375), "-0x1.abcdef0000000p+0");
+    CHECK_EQUAL(tfm::format("%A",  1.671111047267913818359375),  "0X1.ABCDEF0000000P+0");
+#   endif
     CHECK_EQUAL(tfm::format("%g", 10), "10");
     CHECK_EQUAL(tfm::format("%G", 100), "100");
     CHECK_EQUAL(tfm::format("%c", 65), "A");
@@ -170,11 +175,9 @@ int unitTests()
     // Per C++ spec, iostreams ignore the precision for "%a" to avoid precision
     // loss. This is a printf incompatibility.
 #   ifndef _MSC_VER
-    CHECK_EQUAL(tfm::format("%a", 1.13671875), "0x1.23p+0");
-    CHECK_EQUAL(tfm::format("%.6a", 1.13671875), "0x1.23p+0");
+    CHECK_EQUAL(tfm::format("%.1a", 1.13671875), "0x1.23p+0");
 #   else
-    CHECK_EQUAL(tfm::format("%a", 1.13671875), "0x1.2300000000000p+0");
-    CHECK_EQUAL(tfm::format("%.6a", 1.13671875), "0x1.2300000000000p+0");
+    CHECK_EQUAL(tfm::format("%.1a", 1.13671875), "0x1.2300000000000p+0");
 #   endif
     CHECK_EQUAL(tfm::format("%.2s", "asdf"), "as"); // strings truncate to precision
     CHECK_EQUAL(tfm::format("%.2s", std::string("asdf")), "as");
