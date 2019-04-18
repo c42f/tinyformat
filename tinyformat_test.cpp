@@ -128,9 +128,9 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%hc", (short)65), "A");
     CHECK_EQUAL(tfm::format("%lc", (long)65), "A");
     CHECK_EQUAL(tfm::format("%s", "asdf_123098"), "asdf_123098");
-    // Note: All tests printing pointers are different on windows, since
-    // there's no standard numerical representation.
-    // Representation also differs between 32-bit and 64-bit windows.
+
+    // Test printing of pointers.  Note that there's no standard numerical
+    // representation so this is platform and OS dependent.
 #   ifdef _MSC_VER
 #   ifdef _WIN64
     CHECK_EQUAL(tfm::format("%p", (void*)0x12345), "0000000000012345");
@@ -170,6 +170,7 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%10.*f", 4, 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%*.*f", 10, 4, 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%*.*f", -10, 4, 1234.1234567890), "1234.1235 ");
+    CHECK_EQUAL(tfm::format("%.*f", -4, 1234.1234567890), "1234.123457"); // negative precision ignored
     // Test variable precision & width with positional arguments
     CHECK_EQUAL(tfm::format("%1$*2$.4f", 1234.1234567890, 10), " 1234.1235");
     CHECK_EQUAL(tfm::format("%1$10.*2$f", 1234.1234567890, 4), " 1234.1235");
@@ -238,6 +239,7 @@ int unitTests()
     EXPECT_ERROR( tfm::format("%0$d", 1)      )
     EXPECT_ERROR( tfm::format("%1$.*3$d", 1, 2)     )
     EXPECT_ERROR( tfm::format("%1$.*0$d", 1, 2)     )
+    EXPECT_ERROR( tfm::format("%1$.*$d",  1, 2)     )
     EXPECT_ERROR( tfm::format("%3$*4$.*2$d", 1, 2, 3) )
     EXPECT_ERROR( tfm::format("%3$*0$.*2$d", 1, 2, 3) )
 

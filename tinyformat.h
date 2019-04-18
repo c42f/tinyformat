@@ -555,6 +555,49 @@ inline int parseIntAndAdvance(const char*& c)
     return i;
 }
 
+// Parse width or precision `n` from format string pointer `c`, and advance it
+// to the next character. If an indirection is requested with `*`, the argument
+// is read from `formatters[argIndex]` and `argIndex` is incremented (or read
+// from `formatters[n]` in positional mode). Returns true if one or more
+// characters were read.
+inline bool parseWidthOrPrecision(int& n, const char*& c, bool positionalMode,
+                                  const detail::FormatArg* formatters,
+                                  int& argIndex, int numFormatters)
+{
+    if(*c >= '0' && *c <= '9')
+    {
+        n = parseIntAndAdvance(c);
+    }
+    else if(*c == '*')
+    {
+        ++c;
+        n = 0;
+        if(positionalMode)
+        {
+            int pos = parseIntAndAdvance(c) - 1;
+            if(*c != '$')
+                TINYFORMAT_ERROR("tinyformat: Non-positional argument used after a positional one");
+            if(pos >= 0 && pos < numFormatters)
+                n = formatters[pos].toInt();
+            else
+                TINYFORMAT_ERROR("tinyformat: Positional argument out of range");
+            ++c;
+        }
+        else
+        {
+            if(argIndex < numFormatters)
+                n = formatters[argIndex++].toInt();
+            else
+                TINYFORMAT_ERROR("tinyformat: Not enough arguments to read variable width or precision");
+        }
+    }
+    else
+    {
+        return false;
+    }
+    return true;
+}
+
 // Print literal part of format string and return next format spec
 // position.
 //
@@ -649,15 +692,12 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
         const char tmpc = *c;
         int value = parseIntAndAdvance(c);
         if(*c == '$')
-        {  // value is an argument index
+        {
+            // value is an argument index
             if(value > 0 && value <= numFormatters)
-            {
                 argIndex = value - 1;
-            }
             else
-            {
                 TINYFORMAT_ERROR("tinyformat: Positional argument out of range");
-            }
             ++c;
             positionalMode = true;
         }
@@ -727,33 +767,11 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
             break;
         }
         // Parse width
-        if(*c >= '0' && *c <= '9')
+        int width = 0;
+        widthSet = parseWidthOrPrecision(width, c, positionalMode,
+                                         formatters, argIndex, numFormatters);
+        if(widthSet)
         {
-            widthSet = true;
-            out.width(parseIntAndAdvance(c));
-        }
-        else if(*c == '*')
-        {
-            widthSet = true;
-            int width = 0;
-            if(positionalMode)
-            {
-                ++c;
-                int pos = parseIntAndAdvance(c) - 1;
-                if(*c != '$')
-                    TINYFORMAT_ERROR("tinyformat: Non-positional argument used after a positional one");
-                if(pos >= 0 && pos < numFormatters)
-                    width = formatters[pos].toInt();
-                else
-                    TINYFORMAT_ERROR("tinyformat: Positional argument out of range");
-            }
-            else
-            {
-                if(argIndex < numFormatters)
-                    width = formatters[argIndex++].toInt();
-                else
-                    TINYFORMAT_ERROR("tinyformat: Not enough arguments to read variable width");
-            }
             if(width < 0)
             {
                 // negative widths correspond to '-' flag set
@@ -762,7 +780,6 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
                 width = -width;
             }
             out.width(width);
-            ++c;
         }
     }
     // 3) Parse precision
@@ -770,37 +787,13 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
     {
         ++c;
         int precision = 0;
-        if(*c == '*')
-        {
-            ++c;
-            if(positionalMode)
-            {
-                int pos = parseIntAndAdvance(c) - 1;
-                if(*c != '$')
-                    TINYFORMAT_ERROR("tinyformat: Non-positional argument used after a positional one");
-                if(pos >= 0 && pos < numFormatters)
-                    precision = formatters[pos].toInt();
-                else
-                    TINYFORMAT_ERROR("tinyformat: Positional argument out of range");
-                ++c;
-            }
-            else
-            {
-                if(argIndex < numFormatters)
-                    precision = formatters[argIndex++].toInt();
-                else
-                    TINYFORMAT_ERROR("tinyformat: Not enough arguments to read variable precision");
-            }
-        }
-        else
-        {
-            if(*c >= '0' && *c <= '9')
-                precision = parseIntAndAdvance(c);
-            else if(*c == '-') // negative precisions ignored, treated as zero.
-                parseIntAndAdvance(++c);
-        }
-        out.precision(precision);
-        precisionSet = true;
+        parseWidthOrPrecision(precision, c, positionalMode,
+                              formatters, argIndex, numFormatters);
+        // Presence of `.` indicates precision set, unless the inferred value
+        // was negative in which case the default is used.
+        precisionSet = precision >= 0;
+        if(precisionSet)
+            out.precision(precision);
     }
     // 4) Ignore any C99 length modifier
     while(*c == 'l' || *c == 'h' || *c == 'L' ||
