@@ -128,9 +128,9 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%hc", (short)65), "A");
     CHECK_EQUAL(tfm::format("%lc", (long)65), "A");
     CHECK_EQUAL(tfm::format("%s", "asdf_123098"), "asdf_123098");
-    // Note: All tests printing pointers are different on windows, since
-    // there's no standard numerical representation.
-    // Representation also differs between 32-bit and 64-bit windows.
+
+    // Test printing of pointers.  Note that there's no standard numerical
+    // representation so this is platform and OS dependent.
 #   ifdef _MSC_VER
 #   ifdef _WIN64
     CHECK_EQUAL(tfm::format("%p", (void*)0x12345), "0000000000012345");
@@ -165,11 +165,17 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%.f", 10.1), "10");
     CHECK_EQUAL(tfm::format("%.2s", "asdf"), "as"); // strings truncate to precision
     CHECK_EQUAL(tfm::format("%.2s", std::string("asdf")), "as");
-//    // Test variable precision & width
+    // Test variable precision & width
     CHECK_EQUAL(tfm::format("%*.4f", 10, 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%10.*f", 4, 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%*.*f", 10, 4, 1234.1234567890), " 1234.1235");
     CHECK_EQUAL(tfm::format("%*.*f", -10, 4, 1234.1234567890), "1234.1235 ");
+    CHECK_EQUAL(tfm::format("%.*f", -4, 1234.1234567890), "1234.123457"); // negative precision ignored
+    // Test variable precision & width with positional arguments
+    CHECK_EQUAL(tfm::format("%1$*2$.4f", 1234.1234567890, 10), " 1234.1235");
+    CHECK_EQUAL(tfm::format("%1$10.*2$f", 1234.1234567890, 4), " 1234.1235");
+    CHECK_EQUAL(tfm::format("%1$*3$.*2$f", 1234.1234567890, 4, 10), " 1234.1235");
+    CHECK_EQUAL(tfm::format("%1$*2$.*3$f", 1234.1234567890, -10, 4), "1234.1235 ");
 
     // Test flags
     CHECK_EQUAL(tfm::format("%#x", 0x271828), "0x271828");
@@ -212,6 +218,10 @@ int unitTests()
                        1.234, 42, 3.13, "str", 0XDEAD, (int)'X'),
                 "1.2340000000:0042:+3.13:str:0XDEAD:X:%:%asdf");
 
+    CHECK_EQUAL(tfm::format("%2$0.10f:%3$0*4$d:%1$+g:%6$s:%5$#X:%7$c:%%:%%asdf",
+                       3.13, 1.234, 42, 4, 0XDEAD, "str", (int)'X'),
+                "1.2340000000:0042:+3.13:str:0XDEAD:X:%:%asdf");
+
     // Test wrong number of args
     EXPECT_ERROR( tfm::format("%d", 5, 10) )
     EXPECT_ERROR( tfm::format("%d %d", 1)  )
@@ -224,6 +234,14 @@ int unitTests()
     EXPECT_ERROR( tfm::format("%*d", 1)      )
     EXPECT_ERROR( tfm::format("%.*d", 1)     )
     EXPECT_ERROR( tfm::format("%*.*d", 1, 2) )
+    // Error required if positional argument refers to non-existent argument
+    EXPECT_ERROR( tfm::format("%2$d", 1)      )
+    EXPECT_ERROR( tfm::format("%0$d", 1)      )
+    EXPECT_ERROR( tfm::format("%1$.*3$d", 1, 2)     )
+    EXPECT_ERROR( tfm::format("%1$.*0$d", 1, 2)     )
+    EXPECT_ERROR( tfm::format("%1$.*$d",  1, 2)     )
+    EXPECT_ERROR( tfm::format("%3$*4$.*2$d", 1, 2, 3) )
+    EXPECT_ERROR( tfm::format("%3$*0$.*2$d", 1, 2, 3) )
 
     // Unhandled C99 format spec
     EXPECT_ERROR( tfm::format("%n", 10) )

@@ -8,6 +8,7 @@ of the type of `s`, tinyformat might be for you.  Design goals include:
 
 * Type safety and extensibility for user defined types.
 * C99 `printf()` compatibility, to the extent possible using `std::ostream`
+* POSIX extension for positional arguments
 * Simplicity and minimalism.  A single header file to include and distribute
   with your projects.
 * Augment rather than replace the standard stream formatting mechanism
@@ -29,6 +30,16 @@ long hour = 14;
 int min = 44;
 
 tfm::printf("%s, %s %d, %.2d:%.2d\n", weekday, month, day, hour, min);
+```
+
+POSIX extension for positional arguments is available.
+The ability to rearrange formatting arguments is an important feature
+for localization because the word order may vary in different languages.
+
+Previous example for German usage. Arguments are reordered:
+
+```C++
+tfm::printf("%1$s, %3$d. %2$s, %4$d:%5$.2d\n", weekday, month, day, hour, min);
 ```
 
 The strange types here emphasize the type safety of the interface, for example
