@@ -448,7 +448,7 @@ as recorded in the git repository.
 The implementation owes a lot to `boost::format` for showing that it's fairly
 easy to use stream based formatting to simulate most of the `printf()`
 syntax.  Douglas Gregor's introduction to variadic templates --- see
-http://www.generic-programming.org/~dgregor/cpp/variadic-templates.html --- was
+https://web.archive.org/web/20131018185034/http://www.generic-programming.org/~dgregor/cpp/variadic-templates.html --- was
 also helpful, especially since it solves exactly the `printf()` problem for
 the case of trivial format strings.
 
