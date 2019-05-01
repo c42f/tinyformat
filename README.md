@@ -202,9 +202,11 @@ means that a `bool` variable printed with "%s" will come out as `true` or
 Not all features of printf can be simulated simply using standard iostreams.
 Here's a list of known incompatibilities:
 
-* The C99 `"%a"` and `"%A"` hexadecimal floating point conversions are not
-  supported since the iostreams don't have the necessary flags.  Using either
-  of these flags will result in a call to `TINYFORMAT_ERROR`.
+* The `"%a"` and `"%A"` hexadecimal floating point conversions ignore precision
+  as stream output of hexfloat (introduced in C++11) ignores precision, always
+  outputting the minimum number of digits required for exact representation.
+  MSVC incorrectly honors stream precision, so we force precision to 13 in this
+  case to guarentee lossless roundtrip conversion.
 * The precision for integer conversions cannot be supported by the iostreams
   state independently of the field width.  (Note: **this is only a
   problem for certain obscure integer conversions**; float conversions like
