@@ -110,6 +110,8 @@ int unitTests()
     // up the tests.  Turn this off for consistency:
     _set_output_format(_TWO_DIGIT_EXPONENT);
 #   endif
+
+    //------------------------------------------------------------
     // Test various basic format specs against results of sprintf
     CHECK_EQUAL(tfm::format("%s", "asdf"), "asdf");
     CHECK_EQUAL(tfm::format("%d", 1234), "1234");
@@ -135,36 +137,43 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%hc", (short)65), "A");
     CHECK_EQUAL(tfm::format("%lc", (long)65), "A");
     CHECK_EQUAL(tfm::format("%s", "asdf_123098"), "asdf_123098");
+    // Test "%%" - (note plain "%%" format gives warning with gcc printf)
+    CHECK_EQUAL(tfm::format("%%%s", "asdf"), "%asdf");
+    // Check that 0-argument formatting is printf-compatible
+    CHECK_EQUAL(tfm::format("100%%"), "100%");
 
     // Test printing of pointers.  Note that there's no standard numerical
     // representation so this is platform and OS dependent.
+    //
+    // Also test special case when %p is used with `char*` pointer types. In
+    // this case the implementation needs to take care to cast to void*
+    // before invoking `operator<<`; it must not dereference the pointer and
+    // print as a string.
 #   ifdef _MSC_VER
 #   ifdef _WIN64
-    CHECK_EQUAL(tfm::format("%p", (void*)0x12345), "0000000000012345");
+    CHECK_EQUAL(tfm::format("%p", (void*)0x12345),    "0000000000012345");
+    CHECK_EQUAL(tfm::format("%p", (const char*)0x10), "0000000000000010");
 #   else
     CHECK_EQUAL(tfm::format("%p", (void*)0x12345), "00012345");
+    CHECK_EQUAL(tfm::format("%p", (const char*)0x10), "00000010");
 #   endif // _WIN64
 #   else
     CHECK_EQUAL(tfm::format("%p", (void*)0x12345), "0x12345");
-#   endif // _MSC_VER
-    CHECK_EQUAL(tfm::format("%%%s", "asdf"), "%asdf"); // note: plain "%%" format gives warning with gcc
+    CHECK_EQUAL(tfm::format("%p", (const char*)0x10),    "0x10");
+    CHECK_EQUAL(tfm::format("%p", (char*)0x10),          "0x10");
+    CHECK_EQUAL(tfm::format("%p", (signed char*)0x10),   "0x10");
+    CHECK_EQUAL(tfm::format("%p", (unsigned char*)0x10), "0x10");
+#   endif // !_MSC_VER
+
     // chars with int format specs are printed as ints:
     CHECK_EQUAL(tfm::format("%hhd", (char)65), "65");
     CHECK_EQUAL(tfm::format("%hhu", (unsigned char)65), "65");
     CHECK_EQUAL(tfm::format("%hhd", (signed char)65), "65");
-#   ifdef _MSC_VER
-#   ifdef _WIN64
-    CHECK_EQUAL(tfm::format("%p", (const char*)0x10), "0000000000000010");
-#   else
-    CHECK_EQUAL(tfm::format("%p", (const char*)0x10), "00000010");
-#   endif // _WIN64
-#   else
-    CHECK_EQUAL(tfm::format("%p", (const char*)0x10), "0x10"); // should print address, not string.
-#   endif // _MSC_VER
-    // bools with string format spec are printed as "true" or "false"
+    // Bools with string format spec are printed as "true" or "false".
     CHECK_EQUAL(tfm::format("%s", true), "true");
     CHECK_EQUAL(tfm::format("%d", true), "1");
 
+    //------------------------------------------------------------
     // Test precision & width
     CHECK_EQUAL(tfm::format("%10d", -10), "       -10");
     CHECK_EQUAL(tfm::format("%.4d", 10), "0010");
@@ -194,6 +203,7 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%1$*3$.*2$f", 1234.1234567890, 4, 10), " 1234.1235");
     CHECK_EQUAL(tfm::format("%1$*2$.*3$f", 1234.1234567890, -10, 4), "1234.1235 ");
 
+    //------------------------------------------------------------
     // Test flags
     CHECK_EQUAL(tfm::format("%#x", 0x271828), "0x271828");
     CHECK_EQUAL(tfm::format("%#o", 0x271828), "011614050");
@@ -215,6 +225,7 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%-010d", 10), "10        "); // '-' overrides '0'
     CHECK_EQUAL(tfm::format("%0-10d", 10), "10        ");
 
+    //------------------------------------------------------------
     // Check that length modifiers are ignored
     CHECK_EQUAL(tfm::format("%hd", (short)1000), "1000");
     CHECK_EQUAL(tfm::format("%ld", (long)100000), "100000");
@@ -223,13 +234,11 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%td", (ptrdiff_t)100000), "100000");
     CHECK_EQUAL(tfm::format("%jd", 100000), "100000");
 
-    // Check that 0-argument formatting is printf-compatible
-    CHECK_EQUAL(tfm::format("100%%"), "100%");
-
     // printf incompatibilities:
     // compareSprintf("%6.4x", 10); // precision & width can't be supported independently
     // compareSprintf("%.4d", -10); // negative numbers + precision don't quite work.
 
+    //------------------------------------------------------------
     // General "complicated" format spec test
     CHECK_EQUAL(tfm::format("%0.10f:%04d:%+g:%s:%#X:%c:%%:%%asdf",
                        1.234, 42, 3.13, "str", 0XDEAD, (int)'X'),
@@ -239,6 +248,8 @@ int unitTests()
                        3.13, 1.234, 42, 4, 0XDEAD, "str", (int)'X'),
                 "1.2340000000:0042:+3.13:str:0XDEAD:X:%:%asdf");
 
+    //------------------------------------------------------------
+    // Error handling
     // Test wrong number of args
     EXPECT_ERROR( tfm::format("%d", 5, 10) )
     EXPECT_ERROR( tfm::format("%d %d", 1)  )
@@ -263,6 +274,8 @@ int unitTests()
     // Unhandled C99 format spec
     EXPECT_ERROR( tfm::format("%n", 10) )
 
+    //------------------------------------------------------------
+    // Misc
 #ifdef TEST_WCHAR_T_COMPILE
     // Test wchar_t handling - should fail to compile!
     tfm::format("%ls", L"blah");
