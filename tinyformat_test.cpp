@@ -174,6 +174,16 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%d", true), "1");
 
     //------------------------------------------------------------
+    // Simple tests of posix positional arguments
+    CHECK_EQUAL(tfm::format("%2$d %1$d", 10, 20), "20 10");
+    // Allow positional arguments to be unreferenced. This is a slight
+    // generalization of posix printf, which appears to allow only trailing
+    // arguments to be unreferenced. See
+    // http://pubs.opengroup.org/onlinepubs/9699919799/functions/printf.html
+    CHECK_EQUAL(tfm::format("%1$d", 10, 20), "10");
+    CHECK_EQUAL(tfm::format("%2$d", 10, 20), "20");
+
+    //------------------------------------------------------------
     // Test precision & width
     CHECK_EQUAL(tfm::format("%10d", -10), "       -10");
     CHECK_EQUAL(tfm::format("%.4d", 10), "0010");

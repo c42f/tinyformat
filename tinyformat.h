@@ -658,10 +658,7 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
                                          const detail::FormatArg* args,
                                          int& argIndex, int numArgs)
 {
-    if (*fmtStart != '%') {
-        TINYFORMAT_ERROR("tinyformat: Not enough conversion specifiers in format string");
-        return fmtStart;
-    }
+    TINYFORMAT_ASSERT(*fmtStart == '%');
     // Reset stream state to defaults.
     out.width(0);
     out.precision(6);
@@ -873,19 +870,26 @@ inline void formatImpl(std::ostream& out, const char* fmt,
     std::ios::fmtflags origFlags = out.flags();
     char origFill = out.fill();
 
+    // "Positional mode" means all format specs should be of the form "%n$..."
+    // with `n` an integer. We detect this in `streamStateFromFormat`.
     bool positionalMode = false;
-    for (int argIndex = 0; positionalMode || argIndex < numArgs; ++argIndex) {
-        // Parse the format string
+    int argIndex = 0;
+    while (true) {
         fmt = printFormatStringLiteral(out, fmt);
-        if (positionalMode && *fmt == '\0')
+        if (*fmt == '\0') {
+            if (!positionalMode && argIndex < numArgs) {
+                TINYFORMAT_ERROR("tinyformat: Not enough conversion specifiers in format string");
+            }
             break;
+        }
         bool spacePadPositive = false;
         int ntrunc = -1;
         const char* fmtEnd = streamStateFromFormat(out, positionalMode, spacePadPositive, ntrunc, fmt,
                                                    args, argIndex, numArgs);
+        // NB: argIndex may be incremented by reading variable width/precision
+        // in `streamStateFromFormat`, so do the bounds check here.
         if (argIndex >= numArgs) {
-            // Check args remain after reading any variable width/precision
-            TINYFORMAT_ERROR("tinyformat: Not enough format arguments");
+            TINYFORMAT_ERROR("tinyformat: Too many conversion specifiers in format string");
             return;
         }
         const FormatArg& arg = args[argIndex];
@@ -909,13 +913,10 @@ inline void formatImpl(std::ostream& out, const char* fmt,
             }
             out << result;
         }
+        if (!positionalMode)
+            ++argIndex;
         fmt = fmtEnd;
     }
-
-    // Print remaining part of format string.
-    fmt = printFormatStringLiteral(out, fmt);
-    if (*fmt != '\0')
-        TINYFORMAT_ERROR("tinyformat: Too many conversion specifiers in format string");
 
     // Restore stream state
     out.width(origWidth);
