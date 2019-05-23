@@ -559,12 +559,12 @@ inline int parseIntAndAdvance(const char*& c)
 
 // Parse width or precision `n` from format string pointer `c`, and advance it
 // to the next character. If an indirection is requested with `*`, the argument
-// is read from `formatters[argIndex]` and `argIndex` is incremented (or read
-// from `formatters[n]` in positional mode). Returns true if one or more
+// is read from `args[argIndex]` and `argIndex` is incremented (or read
+// from `args[n]` in positional mode). Returns true if one or more
 // characters were read.
 inline bool parseWidthOrPrecision(int& n, const char*& c, bool positionalMode,
-                                  const detail::FormatArg* formatters,
-                                  int& argIndex, int numFormatters)
+                                  const detail::FormatArg* args,
+                                  int& argIndex, int numArgs)
 {
     if (*c >= '0' && *c <= '9') {
         n = parseIntAndAdvance(c);
@@ -576,15 +576,15 @@ inline bool parseWidthOrPrecision(int& n, const char*& c, bool positionalMode,
             int pos = parseIntAndAdvance(c) - 1;
             if (*c != '$')
                 TINYFORMAT_ERROR("tinyformat: Non-positional argument used after a positional one");
-            if (pos >= 0 && pos < numFormatters)
-                n = formatters[pos].toInt();
+            if (pos >= 0 && pos < numArgs)
+                n = args[pos].toInt();
             else
                 TINYFORMAT_ERROR("tinyformat: Positional argument out of range");
             ++c;
         }
         else {
-            if (argIndex < numFormatters)
-                n = formatters[argIndex++].toInt();
+            if (argIndex < numArgs)
+                n = args[argIndex++].toInt();
             else
                 TINYFORMAT_ERROR("tinyformat: Not enough arguments to read variable width or precision");
         }
@@ -595,29 +595,25 @@ inline bool parseWidthOrPrecision(int& n, const char*& c, bool positionalMode,
     return true;
 }
 
-// Print literal part of format string and return next format spec
-// position.
+// Print literal part of format string and return next format spec position.
 //
-// Skips over any occurrences of '%%', printing a literal '%' to the
-// output.  The position of the first % character of the next
-// nontrivial format spec is returned, or the end of string.
+// Skips over any occurrences of '%%', printing a literal '%' to the output.
+// The position of the first % character of the next nontrivial format spec is
+// returned, or the end of string.
 inline const char* printFormatStringLiteral(std::ostream& out, const char* fmt)
 {
     const char* c = fmt;
     for (;; ++c) {
-        switch (*c) {
-            case '\0':
-                out.write(fmt, c - fmt);
+        if (*c == '\0') {
+            out.write(fmt, c - fmt);
+            return c;
+        }
+        else if (*c == '%') {
+            out.write(fmt, c - fmt);
+            if (*(c+1) != '%')
                 return c;
-            case '%':
-                out.write(fmt, c - fmt);
-                if (*(c+1) != '%')
-                    return c;
-                // for "%%", tack trailing % onto next literal section.
-                fmt = ++c;
-                break;
-            default:
-                break;
+            // for "%%", tack trailing % onto next literal section.
+            fmt = ++c;
         }
     }
 }
@@ -659,8 +655,8 @@ inline const char* printFormatStringLiteral(std::ostream& out, const char* fmt)
 inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode,
                                          bool& spacePadPositive,
                                          int& ntrunc, const char* fmtStart,
-                                         const detail::FormatArg* formatters,
-                                         int& argIndex, int numFormatters)
+                                         const detail::FormatArg* args,
+                                         int& argIndex, int numArgs)
 {
     if (*fmtStart != '%') {
         TINYFORMAT_ERROR("tinyformat: Not enough conversion specifiers in format string");
@@ -686,7 +682,7 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
         int value = parseIntAndAdvance(c);
         if (*c == '$') {
             // value is an argument index
-            if (value > 0 && value <= numFormatters)
+            if (value > 0 && value <= numArgs)
                 argIndex = value - 1;
             else
                 TINYFORMAT_ERROR("tinyformat: Positional argument out of range");
@@ -752,7 +748,7 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
         // Parse width
         int width = 0;
         widthSet = parseWidthOrPrecision(width, c, positionalMode,
-                                         formatters, argIndex, numFormatters);
+                                         args, argIndex, numArgs);
         if (widthSet) {
             if (width < 0) {
                 // negative widths correspond to '-' flag set
@@ -768,7 +764,7 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
         ++c;
         int precision = 0;
         parseWidthOrPrecision(precision, c, positionalMode,
-                              formatters, argIndex, numFormatters);
+                              args, argIndex, numArgs);
         // Presence of `.` indicates precision set, unless the inferred value
         // was negative in which case the default is used.
         precisionSet = precision >= 0;
@@ -868,8 +864,8 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
 
 //------------------------------------------------------------------------------
 inline void formatImpl(std::ostream& out, const char* fmt,
-                       const detail::FormatArg* formatters,
-                       int numFormatters)
+                       const detail::FormatArg* args,
+                       int numArgs)
 {
     // Saved stream state
     std::streamsize origWidth = out.width();
@@ -878,7 +874,7 @@ inline void formatImpl(std::ostream& out, const char* fmt,
     char origFill = out.fill();
 
     bool positionalMode = false;
-    for (int argIndex = 0; positionalMode || argIndex < numFormatters; ++argIndex) {
+    for (int argIndex = 0; positionalMode || argIndex < numArgs; ++argIndex) {
         // Parse the format string
         fmt = printFormatStringLiteral(out, fmt);
         if (positionalMode && *fmt == '\0')
@@ -886,13 +882,13 @@ inline void formatImpl(std::ostream& out, const char* fmt,
         bool spacePadPositive = false;
         int ntrunc = -1;
         const char* fmtEnd = streamStateFromFormat(out, positionalMode, spacePadPositive, ntrunc, fmt,
-                                                   formatters, argIndex, numFormatters);
-        if (argIndex >= numFormatters) {
+                                                   args, argIndex, numArgs);
+        if (argIndex >= numArgs) {
             // Check args remain after reading any variable width/precision
             TINYFORMAT_ERROR("tinyformat: Not enough format arguments");
             return;
         }
-        const FormatArg& arg = formatters[argIndex];
+        const FormatArg& arg = args[argIndex];
         // Format the arg into the stream.
         if (!spacePadPositive) {
             arg.format(out, fmt, fmtEnd, ntrunc);
@@ -940,14 +936,14 @@ inline void formatImpl(std::ostream& out, const char* fmt,
 class FormatList
 {
     public:
-        FormatList(detail::FormatArg* formatters, int N)
-            : m_formatters(formatters), m_N(N) { }
+        FormatList(detail::FormatArg* args, int N)
+            : m_args(args), m_N(N) { }
 
         friend void vformat(std::ostream& out, const char* fmt,
                             const FormatList& list);
 
     private:
-        const detail::FormatArg* m_formatters;
+        const detail::FormatArg* m_args;
         int m_N;
 };
 
@@ -1041,7 +1037,7 @@ TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_MAKEFORMATLIST)
 /// list of format arguments is held in a single function argument.
 inline void vformat(std::ostream& out, const char* fmt, FormatListRef list)
 {
-    detail::formatImpl(out, fmt, list.m_formatters, list.m_N);
+    detail::formatImpl(out, fmt, list.m_args, list.m_N);
 }
 
 
