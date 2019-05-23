@@ -246,8 +246,7 @@ struct formatZeroIntegerWorkaround<T,true>
 {
     static bool invoke(std::ostream& out, const T& value)
     {
-        if (static_cast<int>(value) == 0 && out.flags() & std::ios::showpos)
-        {
+        if (static_cast<int>(value) == 0 && out.flags() & std::ios::showpos) {
             out << "+0";
             return true;
         }
@@ -288,7 +287,7 @@ inline void formatTruncated(std::ostream& out, const T& value, int ntrunc)
 inline void formatTruncated(std::ostream& out, type* value, int ntrunc) \
 {                                                           \
     std::streamsize len = 0;                                \
-    while(len < ntrunc && value[len] != 0)                  \
+    while (len < ntrunc && value[len] != 0)                 \
         ++len;                                              \
     out.write(value, len);                                  \
 }
@@ -334,15 +333,14 @@ inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,
     // could otherwise lead to a crash when printing a dangling (const char*).
     const bool canConvertToChar = detail::is_convertible<T,char>::value;
     const bool canConvertToVoidPtr = detail::is_convertible<T, const void*>::value;
-    if(canConvertToChar && *(fmtEnd-1) == 'c')
+    if (canConvertToChar && *(fmtEnd-1) == 'c')
         detail::formatValueAsType<T, char>::invoke(out, value);
-    else if(canConvertToVoidPtr && *(fmtEnd-1) == 'p')
+    else if (canConvertToVoidPtr && *(fmtEnd-1) == 'p')
         detail::formatValueAsType<T, const void*>::invoke(out, value);
 #ifdef TINYFORMAT_OLD_LIBSTDCPLUSPLUS_WORKAROUND
-    else if(detail::formatZeroIntegerWorkaround<T>::invoke(out, value)) /**/;
+    else if (detail::formatZeroIntegerWorkaround<T>::invoke(out, value)) /**/;
 #endif
-    else if(ntrunc >= 0)
-    {
+    else if (ntrunc >= 0) {
         // Take care not to overread C strings in truncating conversions like
         // "%.4s" where at most 4 characters may be read.
         detail::formatTruncated(out, value, ntrunc);
@@ -357,8 +355,7 @@ inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,
 inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,  \
                         const char* fmtEnd, int /**/, charType value) \
 {                                                                     \
-    switch(*(fmtEnd-1))                                               \
-    {                                                                 \
+    switch (*(fmtEnd-1)) {                                            \
         case 'u': case 'd': case 'i': case 'o': case 'X': case 'x':   \
             out << static_cast<int>(value); break;                    \
         default:                                                      \
@@ -555,7 +552,7 @@ class FormatArg
 inline int parseIntAndAdvance(const char*& c)
 {
     int i = 0;
-    for(;*c >= '0' && *c <= '9'; ++c)
+    for (;*c >= '0' && *c <= '9'; ++c)
         i = 10*i + (*c - '0');
     return i;
 }
@@ -569,35 +566,30 @@ inline bool parseWidthOrPrecision(int& n, const char*& c, bool positionalMode,
                                   const detail::FormatArg* formatters,
                                   int& argIndex, int numFormatters)
 {
-    if(*c >= '0' && *c <= '9')
-    {
+    if (*c >= '0' && *c <= '9') {
         n = parseIntAndAdvance(c);
     }
-    else if(*c == '*')
-    {
+    else if (*c == '*') {
         ++c;
         n = 0;
-        if(positionalMode)
-        {
+        if (positionalMode) {
             int pos = parseIntAndAdvance(c) - 1;
-            if(*c != '$')
+            if (*c != '$')
                 TINYFORMAT_ERROR("tinyformat: Non-positional argument used after a positional one");
-            if(pos >= 0 && pos < numFormatters)
+            if (pos >= 0 && pos < numFormatters)
                 n = formatters[pos].toInt();
             else
                 TINYFORMAT_ERROR("tinyformat: Positional argument out of range");
             ++c;
         }
-        else
-        {
-            if(argIndex < numFormatters)
+        else {
+            if (argIndex < numFormatters)
                 n = formatters[argIndex++].toInt();
             else
                 TINYFORMAT_ERROR("tinyformat: Not enough arguments to read variable width or precision");
         }
     }
-    else
-    {
+    else {
         return false;
     }
     return true;
@@ -612,16 +604,14 @@ inline bool parseWidthOrPrecision(int& n, const char*& c, bool positionalMode,
 inline const char* printFormatStringLiteral(std::ostream& out, const char* fmt)
 {
     const char* c = fmt;
-    for(;; ++c)
-    {
-        switch(*c)
-        {
+    for (;; ++c) {
+        switch (*c) {
             case '\0':
                 out.write(fmt, c - fmt);
                 return c;
             case '%':
                 out.write(fmt, c - fmt);
-                if(*(c+1) != '%')
+                if (*(c+1) != '%')
                     return c;
                 // for "%%", tack trailing % onto next literal section.
                 fmt = ++c;
@@ -672,8 +662,7 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
                                          const detail::FormatArg* formatters,
                                          int& argIndex, int numFormatters)
 {
-    if(*fmtStart != '%')
-    {
+    if (*fmtStart != '%') {
         TINYFORMAT_ERROR("tinyformat: Not enough conversion specifiers in format string");
         return fmtStart;
     }
@@ -692,60 +681,49 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
 
     // 1) Parse an argument index (if followed by '$') or a width possibly
     // preceded with '0' flag.
-    if(*c >= '0' && *c <= '9')
-    {
+    if (*c >= '0' && *c <= '9') {
         const char tmpc = *c;
         int value = parseIntAndAdvance(c);
-        if(*c == '$')
-        {
+        if (*c == '$') {
             // value is an argument index
-            if(value > 0 && value <= numFormatters)
+            if (value > 0 && value <= numFormatters)
                 argIndex = value - 1;
             else
                 TINYFORMAT_ERROR("tinyformat: Positional argument out of range");
             ++c;
             positionalMode = true;
         }
-        else if(positionalMode)
-        {
+        else if (positionalMode) {
             TINYFORMAT_ERROR("tinyformat: Non-positional argument used after a positional one");
         }
-        else
-        {
-            if(tmpc == '0')
-            {
+        else {
+            if (tmpc == '0') {
                 // Use internal padding so that numeric values are
                 // formatted correctly, eg -00010 rather than 000-10
                 out.fill('0');
                 out.setf(std::ios::internal, std::ios::adjustfield);
             }
-            if(value != 0)
-            {
+            if (value != 0) {
                 // Nonzero value means that we parsed width.
                 widthSet = true;
                 out.width(value);
             }
         }
     }
-    else if(positionalMode)
-    {
+    else if (positionalMode) {
         TINYFORMAT_ERROR("tinyformat: Non-positional argument used after a positional one");
     }
     // 2) Parse flags and width if we did not do it in previous step.
-    if(!widthSet)
-    {
+    if (!widthSet) {
         // Parse flags
-        for(;; ++c)
-        {
-            switch(*c)
-            {
+        for (;; ++c) {
+            switch (*c) {
                 case '#':
                     out.setf(std::ios::showpoint | std::ios::showbase);
                     continue;
                 case '0':
                     // overridden by left alignment ('-' flag)
-                    if(!(out.flags() & std::ios::left))
-                    {
+                    if (!(out.flags() & std::ios::left)) {
                         // Use internal padding so that numeric values are
                         // formatted correctly, eg -00010 rather than 000-10
                         out.fill('0');
@@ -758,7 +736,7 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
                     continue;
                 case ' ':
                     // overridden by show positive sign, '+' flag.
-                    if(!(out.flags() & std::ios::showpos))
+                    if (!(out.flags() & std::ios::showpos))
                         spacePadPositive = true;
                     continue;
                 case '+':
@@ -775,10 +753,8 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
         int width = 0;
         widthSet = parseWidthOrPrecision(width, c, positionalMode,
                                          formatters, argIndex, numFormatters);
-        if(widthSet)
-        {
-            if(width < 0)
-            {
+        if (widthSet) {
+            if (width < 0) {
                 // negative widths correspond to '-' flag set
                 out.fill(' ');
                 out.setf(std::ios::left, std::ios::adjustfield);
@@ -788,8 +764,7 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
         }
     }
     // 3) Parse precision
-    if(*c == '.')
-    {
+    if (*c == '.') {
         ++c;
         int precision = 0;
         parseWidthOrPrecision(precision, c, positionalMode,
@@ -797,19 +772,19 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
         // Presence of `.` indicates precision set, unless the inferred value
         // was negative in which case the default is used.
         precisionSet = precision >= 0;
-        if(precisionSet)
+        if (precisionSet)
             out.precision(precision);
     }
     // 4) Ignore any C99 length modifier
-    while(*c == 'l' || *c == 'h' || *c == 'L' ||
-          *c == 'j' || *c == 'z' || *c == 't')
+    while (*c == 'l' || *c == 'h' || *c == 'L' ||
+           *c == 'j' || *c == 'z' || *c == 't') {
         ++c;
+    }
     // 5) We're up to the conversion specifier character.
     // Set stream flags based on conversion specifier (thanks to the
     // boost::format class for forging the way here).
     bool intConversion = false;
-    switch(*c)
-    {
+    switch (*c) {
         case 'u': case 'd': case 'i':
             out.setf(std::ios::dec, std::ios::basefield);
             intConversion = true;
@@ -862,7 +837,7 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
             // Handled as special case inside formatValue()
             break;
         case 's':
-            if(precisionSet)
+            if (precisionSet)
                 ntrunc = static_cast<int>(out.precision());
             // Make %s print Booleans as "true" and "false"
             out.setf(std::ios::boolalpha);
@@ -878,8 +853,7 @@ inline const char* streamStateFromFormat(std::ostream& out, bool& positionalMode
         default:
             break;
     }
-    if(intConversion && precisionSet && !widthSet)
-    {
+    if (intConversion && precisionSet && !widthSet) {
         // "precision" for integers gives the minimum number of digits (to be
         // padded with zeros on the left).  This isn't really supported by the
         // iostreams, but we can approximately simulate it with the width if
@@ -904,28 +878,26 @@ inline void formatImpl(std::ostream& out, const char* fmt,
     char origFill = out.fill();
 
     bool positionalMode = false;
-    for(int argIndex = 0; positionalMode || argIndex < numFormatters; ++argIndex)
-    {
+    for (int argIndex = 0; positionalMode || argIndex < numFormatters; ++argIndex) {
         // Parse the format string
         fmt = printFormatStringLiteral(out, fmt);
-        if(positionalMode && *fmt == '\0')
+        if (positionalMode && *fmt == '\0')
             break;
         bool spacePadPositive = false;
         int ntrunc = -1;
         const char* fmtEnd = streamStateFromFormat(out, positionalMode, spacePadPositive, ntrunc, fmt,
                                                    formatters, argIndex, numFormatters);
-        if (argIndex >= numFormatters)
-        {
+        if (argIndex >= numFormatters) {
             // Check args remain after reading any variable width/precision
             TINYFORMAT_ERROR("tinyformat: Not enough format arguments");
             return;
         }
         const FormatArg& arg = formatters[argIndex];
         // Format the arg into the stream.
-        if(!spacePadPositive)
+        if (!spacePadPositive) {
             arg.format(out, fmt, fmtEnd, ntrunc);
-        else
-        {
+        }
+        else {
             // The following is a special case with no direct correspondence
             // between stream formatting and the printf() behaviour.  Simulate
             // it crudely by formatting into a temporary string stream and
@@ -935,8 +907,10 @@ inline void formatImpl(std::ostream& out, const char* fmt,
             tmpStream.setf(std::ios::showpos);
             arg.format(tmpStream, fmt, fmtEnd, ntrunc);
             std::string result = tmpStream.str(); // allocates... yuck.
-            for(size_t i = 0, iend = result.size(); i < iend; ++i)
-                if(result[i] == '+') result[i] = ' ';
+            for (size_t i = 0, iend = result.size(); i < iend; ++i) {
+                if (result[i] == '+')
+                    result[i] = ' ';
+            }
             out << result;
         }
         fmt = fmtEnd;
@@ -944,7 +918,7 @@ inline void formatImpl(std::ostream& out, const char* fmt,
 
     // Print remaining part of format string.
     fmt = printFormatStringLiteral(out, fmt);
-    if(*fmt != '\0')
+    if (*fmt != '\0')
         TINYFORMAT_ERROR("tinyformat: Too many conversion specifiers in format string");
 
     // Restore stream state

@@ -29,7 +29,7 @@ void compareSprintf(const Args&... args)
     std::string tfmResult = tfm::format(args...);
     char sprintfResult[200];
     sprintf(sprintfResult, args...);
-    if(tfmResult != sprintfResult)
+    if (tfmResult != sprintfResult)
     {
         std::cout << tfmResult << std::endl;
         std::cout << sprintfResult << std::endl;
@@ -46,10 +46,10 @@ try                                                             \
     std::cout << "expected exception in " #expression << "\n";  \
     ++nfailed;                                                  \
 }                                                               \
-catch(std::runtime_error&) {}                                   \
+catch (std::runtime_error&) {}                                  \
 
 #define CHECK_EQUAL(a, b)                                  \
-if(!((a) == (b)))                                          \
+if (!((a) == (b)))                                         \
 {                                                          \
     std::cout << "test failed, line " << __LINE__ << "\n"; \
     std::cout << (a) << " != " << (b) << "\n";             \
