@@ -984,6 +984,11 @@ class FormatListN : public FormatList
         TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_FORMATLIST_CONSTRUCTOR)
 #       undef TINYFORMAT_MAKE_FORMATLIST_CONSTRUCTOR
 #endif
+        FormatListN(const FormatListN& other)
+            : FormatList(&m_formatterStore[0], N)
+        { std::copy(const_cast<FormatArg*>(&other.m_formatterStore[0]),
+                    const_cast<FormatArg*>(&other.m_formatterStore[N]),
+                    &m_formatterStore[0]); }
 
     private:
         FormatArg m_formatterStore[N];
