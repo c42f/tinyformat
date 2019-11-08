@@ -986,8 +986,7 @@ class FormatListN : public FormatList
 #endif
         FormatListN(const FormatListN& other)
             : FormatList(&m_formatterStore[0], N)
-        { std::copy(const_cast<FormatArg*>(&other.m_formatterStore[0]),
-                    const_cast<FormatArg*>(&other.m_formatterStore[N]),
+        { std::copy(&other.m_formatterStore[0], &other.m_formatterStore[N],
                     &m_formatterStore[0]); }
 
     private:
