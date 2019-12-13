@@ -286,6 +286,9 @@ int unitTests()
 
     //------------------------------------------------------------
     // Misc
+    volatile int i = 1234;
+    CHECK_EQUAL(tfm::format("%d", i), "1234");
+
 #ifdef TEST_WCHAR_T_COMPILE
     // Test wchar_t handling - should fail to compile!
     tfm::format("%ls", L"blah");
