@@ -506,7 +506,9 @@ class FormatArg
 
         template<typename T>
         FormatArg(const T& value)
-            : m_value(static_cast<const void*>(&value)),
+            // C-style cast here allows us to also remove volatile; we put it
+            // back in the *Impl functions before dereferencing to avoid UB.
+            : m_value((const void*)(&value)),
             m_formatImpl(&formatImpl<T>),
             m_toIntImpl(&toIntImpl<T>)
         { }
