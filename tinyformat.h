@@ -380,11 +380,11 @@ TINYFORMAT_DEFINE_FORMATVALUE_CHAR(unsigned char)
 #define TINYFORMAT_PASSARGS_TAIL(n) TINYFORMAT_PASSARGS_TAIL_ ## n
 
 // To keep it as transparent as possible, the macros below have been generated
-// using python via the excellent cog.py code generation script.  This avoids
+// using python via the excellent cog code generation script.  This avoids
 // the need for a bunch of complex (but more general) preprocessor tricks as
 // used in boost.preprocessor.
 //
-// To rerun the code generation in place, use `cog.py -r tinyformat.h`
+// To rerun the code generation in place, use `cog -r tinyformat.h`
 // (see http://nedbatchelder.com/code/cog).  Alternatively you can just create
 // extra versions by hand.
 
