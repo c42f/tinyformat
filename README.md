@@ -269,24 +269,105 @@ writing out a version of `error()` for each desired number of arguments.  To
 make this bearable tinyformat comes with a set of macros which are used
 internally to generate the API, but which may also be used in user code.
 
-The three macros `TINYFORMAT_ARGTYPES(n)`, `TINYFORMAT_VARARGS(n)` and
-`TINYFORMAT_PASSARGS(n)` will generate a list of `n` argument types,
+The three macros `TINYFORMAT_ARGTYPES(n,begin,end,...)`,
+`TINYFORMAT_VARARGS(n,...)` and `TINYFORMAT_PASSARGS(n,...)`
+will generate a list of `n` argument types,
 type/name pairs and argument names respectively when called with an integer
-`n` between 1 and 16.  We can use these to define a macro which generates the
+`n` between 0 and 16.  We can use these to define a macro which generates the
 desired user defined function with `n` arguments.  This should be followed by
 a call to `TINYFORMAT_FOREACH_ARGNUM` to generate the set of functions for
-all supported `n`:
+all supported `n`.  There are two usage cases for these macros:
 
-```C++
-#define MAKE_ERROR_FUNC(n)                                    \
-template<TINYFORMAT_ARGTYPES(n)>                              \
-void error(int code, const char* fmt, TINYFORMAT_VARARGS(n))  \
-{                                                             \
-    std::cerr << "error (code " << code << ")";               \
-    tfm::format(std::cerr, fmt, TINYFORMAT_PASSARGS(n));      \
-}
-TINYFORMAT_FOREACH_ARGNUM(MAKE_ERROR_FUNC)
-```
+* You can see the generated macros code on GCC by using the `-E` flag when compiling
+   your code, for other compilers, consult their manual.  For example, when compiling
+   with GCC `g++ -o main -E -g -ggdb test_debugger.cpp --std=c++98`, it will put
+   on the `main` file the generated code on the examples 1 and 2 below.
+
+1. On the first case, these macros are used on a function which
+   can receive from **0 up to 16** template arguments.
+   This is an usage example:
+   ```C++
+   #define MAKE_ERROR_FUNC(n)                         \
+   TINYFORMAT_ARGTYPES(n,template<,>,)                \
+   inline void error(int code,                        \
+           const char* fmt TINYFORMAT_VARARGS(n,,))   \
+   {                                                  \
+       std::cerr << "error (code " << code << ")";    \
+       tfm::format(std::cerr,                         \
+               fmt TINYFORMAT_PASSARGS(n,,));         \
+   }
+
+   TINYFORMAT_FOREACH_ARGNUM(MAKE_ERROR_FUNC)
+   ```
+
+   Which will generate the following functions:
+   ```C++
+   inline void error(int code, const char* fmt)
+   {
+       std::cerr << "error (code " << code << ")";
+       tfm::format(std::cerr, fmt);
+   }
+
+   template<class T1>
+   inline void error(int code, const char* fmt, const T1& v1)
+   {
+       std::cerr << "error (code " << code << ")";
+       tfm::format(std::cerr, fmt, v1);
+   }
+
+   template<class T1, class T2>
+   inline void error(int code, const char* fmt, const T1& v1, const T2& v2)
+   {
+       std::cerr << "error (code " << code << ")";
+       tfm::format(std::cerr, fmt, v1, v2);
+   }
+
+   ...
+   ```
+
+1. On the second case, these macros are used on a function which
+   can receive from **1 up to 16** template arguments.
+   This is an usage example:
+   ```C++
+   #define MAKE_ERROR_FUNC(n)                        \
+   template<class T0 TINYFORMAT_ARGTYPES(n,,,,)>     \
+   inline void error(int code,                       \
+           const T0& v0 TINYFORMAT_VARARGS(n,,))     \
+   {                                                 \
+       std::cerr << "error (code " << code << ")";   \
+       tfm::format(std::cerr,                        \
+               fmt,                                  \
+               v0 TINYFORMAT_PASSARGS(n,,));         \
+   }
+
+   TINYFORMAT_FOREACH_ARGNUM(MAKE_ERROR_FUNC)
+   ```
+
+   Which will generate the following functions:
+   ```C++
+   template<class T0>
+   inline void error(int code, const char* fmt, const T0& v0)
+   {
+       std::cerr << "error (code " << code << ")";
+       tfm::format(std::cerr, fmt, v0);
+   }
+
+   template<class T0, class T1>
+   inline void error(int code, const char* fmt, const T0& v0, const T1& v1)
+   {
+       std::cerr << "error (code " << code << ")";
+       tfm::format(std::cerr, fmt, v0, v1);
+   }
+
+   template<class T0, class T1, class T2>
+   inline void error(int code, const char* fmt, const T0& v0, const T1& v1, const T2& v2)
+   {
+       std::cerr << "error (code " << code << ")";
+       tfm::format(std::cerr, fmt, v0, v1, v2);
+   }
+
+   ...
+   ```
 
 Sometimes it's useful to be able to pass a list of format arguments through to
 a non-template function.  The `FormatList` class is provided as a way to do

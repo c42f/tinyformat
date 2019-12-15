@@ -374,10 +374,9 @@ TINYFORMAT_DEFINE_FORMATVALUE_CHAR(unsigned char)
 // stolen from the boost preprocessor metaprogramming library and cut down to
 // be just general enough for what we need.
 
-#define TINYFORMAT_ARGTYPES(n) TINYFORMAT_ARGTYPES_ ## n
-#define TINYFORMAT_VARARGS(n) TINYFORMAT_VARARGS_ ## n
-#define TINYFORMAT_PASSARGS(n) TINYFORMAT_PASSARGS_ ## n
-#define TINYFORMAT_PASSARGS_TAIL(n) TINYFORMAT_PASSARGS_TAIL_ ## n
+#define TINYFORMAT_ARGTYPES(n,begin,end,...) TINYFORMAT_ARGTYPES_ ## n (begin,end,__VA_ARGS__)
+#define TINYFORMAT_VARARGS(n,...)            TINYFORMAT_VARARGS_  ## n (__VA_ARGS__)
+#define TINYFORMAT_PASSARGS(n,...)           TINYFORMAT_PASSARGS_ ## n (__VA_ARGS__)
 
 // To keep it as transparent as possible, the macros below have been generated
 // using python via the excellent cog.py code generation script.  This avoids
@@ -396,95 +395,79 @@ def makeCommaSepLists(lineTemplate, elemTemplate, startInd=1):
         list = ', '.join([elemTemplate % {'i':i} for i in range(startInd,j+1)])
         cog.outl(lineTemplate % {'j':j, 'list':list})
 
-makeCommaSepLists('#define TINYFORMAT_ARGTYPES_%(j)d %(list)s',
+cog.outl('#define TINYFORMAT_ARGTYPES_0(...)')
+makeCommaSepLists('#define TINYFORMAT_ARGTYPES_%(j)d(begin,end,...) begin __VA_ARGS__ %(list)s end',
                   'class T%(i)d')
 
 cog.outl()
-makeCommaSepLists('#define TINYFORMAT_VARARGS_%(j)d %(list)s',
+cog.outl('#define TINYFORMAT_VARARGS_0(...)')
+makeCommaSepLists('#define TINYFORMAT_VARARGS_%(j)d(...) __VA_ARGS__ %(list)s',
                   'const T%(i)d& v%(i)d')
 
 cog.outl()
-makeCommaSepLists('#define TINYFORMAT_PASSARGS_%(j)d %(list)s', 'v%(i)d')
+cog.outl('#define TINYFORMAT_PASSARGS_0(...)')
+makeCommaSepLists('#define TINYFORMAT_PASSARGS_%(j)d(...) __VA_ARGS__ %(list)s', 'v%(i)d')
 
 cog.outl()
-cog.outl('#define TINYFORMAT_PASSARGS_TAIL_1')
-makeCommaSepLists('#define TINYFORMAT_PASSARGS_TAIL_%(j)d , %(list)s',
-                  'v%(i)d', startInd = 2)
-
-cog.outl()
-cog.outl('#define TINYFORMAT_FOREACH_ARGNUM(m) \\\n    ' +
+cog.outl('#define TINYFORMAT_FOREACH_ARGNUM(m) \\\n    m(0) ' +
          ' '.join(['m(%d)' % (j,) for j in range(1,maxParams+1)]))
 ]]]*/
-#define TINYFORMAT_ARGTYPES_1 class T1
-#define TINYFORMAT_ARGTYPES_2 class T1, class T2
-#define TINYFORMAT_ARGTYPES_3 class T1, class T2, class T3
-#define TINYFORMAT_ARGTYPES_4 class T1, class T2, class T3, class T4
-#define TINYFORMAT_ARGTYPES_5 class T1, class T2, class T3, class T4, class T5
-#define TINYFORMAT_ARGTYPES_6 class T1, class T2, class T3, class T4, class T5, class T6
-#define TINYFORMAT_ARGTYPES_7 class T1, class T2, class T3, class T4, class T5, class T6, class T7
-#define TINYFORMAT_ARGTYPES_8 class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8
-#define TINYFORMAT_ARGTYPES_9 class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9
-#define TINYFORMAT_ARGTYPES_10 class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10
-#define TINYFORMAT_ARGTYPES_11 class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11
-#define TINYFORMAT_ARGTYPES_12 class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12
-#define TINYFORMAT_ARGTYPES_13 class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12, class T13
-#define TINYFORMAT_ARGTYPES_14 class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12, class T13, class T14
-#define TINYFORMAT_ARGTYPES_15 class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12, class T13, class T14, class T15
-#define TINYFORMAT_ARGTYPES_16 class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12, class T13, class T14, class T15, class T16
+#define TINYFORMAT_ARGTYPES_0(...)
+#define TINYFORMAT_ARGTYPES_1(begin,end,...) begin __VA_ARGS__ class T1 end
+#define TINYFORMAT_ARGTYPES_2(begin,end,...) begin __VA_ARGS__ class T1, class T2 end
+#define TINYFORMAT_ARGTYPES_3(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3 end
+#define TINYFORMAT_ARGTYPES_4(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4 end
+#define TINYFORMAT_ARGTYPES_5(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4, class T5 end
+#define TINYFORMAT_ARGTYPES_6(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4, class T5, class T6 end
+#define TINYFORMAT_ARGTYPES_7(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4, class T5, class T6, class T7 end
+#define TINYFORMAT_ARGTYPES_8(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8 end
+#define TINYFORMAT_ARGTYPES_9(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9 end
+#define TINYFORMAT_ARGTYPES_10(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10 end
+#define TINYFORMAT_ARGTYPES_11(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11 end
+#define TINYFORMAT_ARGTYPES_12(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12 end
+#define TINYFORMAT_ARGTYPES_13(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12, class T13 end
+#define TINYFORMAT_ARGTYPES_14(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12, class T13, class T14 end
+#define TINYFORMAT_ARGTYPES_15(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12, class T13, class T14, class T15 end
+#define TINYFORMAT_ARGTYPES_16(begin,end,...) begin __VA_ARGS__ class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12, class T13, class T14, class T15, class T16 end
 
-#define TINYFORMAT_VARARGS_1 const T1& v1
-#define TINYFORMAT_VARARGS_2 const T1& v1, const T2& v2
-#define TINYFORMAT_VARARGS_3 const T1& v1, const T2& v2, const T3& v3
-#define TINYFORMAT_VARARGS_4 const T1& v1, const T2& v2, const T3& v3, const T4& v4
-#define TINYFORMAT_VARARGS_5 const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5
-#define TINYFORMAT_VARARGS_6 const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6
-#define TINYFORMAT_VARARGS_7 const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7
-#define TINYFORMAT_VARARGS_8 const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8
-#define TINYFORMAT_VARARGS_9 const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9
-#define TINYFORMAT_VARARGS_10 const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10
-#define TINYFORMAT_VARARGS_11 const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11
-#define TINYFORMAT_VARARGS_12 const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12
-#define TINYFORMAT_VARARGS_13 const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12, const T13& v13
-#define TINYFORMAT_VARARGS_14 const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12, const T13& v13, const T14& v14
-#define TINYFORMAT_VARARGS_15 const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12, const T13& v13, const T14& v14, const T15& v15
-#define TINYFORMAT_VARARGS_16 const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12, const T13& v13, const T14& v14, const T15& v15, const T16& v16
+#define TINYFORMAT_VARARGS_0(...)
+#define TINYFORMAT_VARARGS_1(...) __VA_ARGS__ const T1& v1
+#define TINYFORMAT_VARARGS_2(...) __VA_ARGS__ const T1& v1, const T2& v2
+#define TINYFORMAT_VARARGS_3(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3
+#define TINYFORMAT_VARARGS_4(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4
+#define TINYFORMAT_VARARGS_5(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5
+#define TINYFORMAT_VARARGS_6(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6
+#define TINYFORMAT_VARARGS_7(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7
+#define TINYFORMAT_VARARGS_8(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8
+#define TINYFORMAT_VARARGS_9(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9
+#define TINYFORMAT_VARARGS_10(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10
+#define TINYFORMAT_VARARGS_11(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11
+#define TINYFORMAT_VARARGS_12(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12
+#define TINYFORMAT_VARARGS_13(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12, const T13& v13
+#define TINYFORMAT_VARARGS_14(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12, const T13& v13, const T14& v14
+#define TINYFORMAT_VARARGS_15(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12, const T13& v13, const T14& v14, const T15& v15
+#define TINYFORMAT_VARARGS_16(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12, const T13& v13, const T14& v14, const T15& v15, const T16& v16
 
-#define TINYFORMAT_PASSARGS_1 v1
-#define TINYFORMAT_PASSARGS_2 v1, v2
-#define TINYFORMAT_PASSARGS_3 v1, v2, v3
-#define TINYFORMAT_PASSARGS_4 v1, v2, v3, v4
-#define TINYFORMAT_PASSARGS_5 v1, v2, v3, v4, v5
-#define TINYFORMAT_PASSARGS_6 v1, v2, v3, v4, v5, v6
-#define TINYFORMAT_PASSARGS_7 v1, v2, v3, v4, v5, v6, v7
-#define TINYFORMAT_PASSARGS_8 v1, v2, v3, v4, v5, v6, v7, v8
-#define TINYFORMAT_PASSARGS_9 v1, v2, v3, v4, v5, v6, v7, v8, v9
-#define TINYFORMAT_PASSARGS_10 v1, v2, v3, v4, v5, v6, v7, v8, v9, v10
-#define TINYFORMAT_PASSARGS_11 v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11
-#define TINYFORMAT_PASSARGS_12 v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12
-#define TINYFORMAT_PASSARGS_13 v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13
-#define TINYFORMAT_PASSARGS_14 v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14
-#define TINYFORMAT_PASSARGS_15 v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15
-#define TINYFORMAT_PASSARGS_16 v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16
-
-#define TINYFORMAT_PASSARGS_TAIL_1
-#define TINYFORMAT_PASSARGS_TAIL_2 , v2
-#define TINYFORMAT_PASSARGS_TAIL_3 , v2, v3
-#define TINYFORMAT_PASSARGS_TAIL_4 , v2, v3, v4
-#define TINYFORMAT_PASSARGS_TAIL_5 , v2, v3, v4, v5
-#define TINYFORMAT_PASSARGS_TAIL_6 , v2, v3, v4, v5, v6
-#define TINYFORMAT_PASSARGS_TAIL_7 , v2, v3, v4, v5, v6, v7
-#define TINYFORMAT_PASSARGS_TAIL_8 , v2, v3, v4, v5, v6, v7, v8
-#define TINYFORMAT_PASSARGS_TAIL_9 , v2, v3, v4, v5, v6, v7, v8, v9
-#define TINYFORMAT_PASSARGS_TAIL_10 , v2, v3, v4, v5, v6, v7, v8, v9, v10
-#define TINYFORMAT_PASSARGS_TAIL_11 , v2, v3, v4, v5, v6, v7, v8, v9, v10, v11
-#define TINYFORMAT_PASSARGS_TAIL_12 , v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12
-#define TINYFORMAT_PASSARGS_TAIL_13 , v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13
-#define TINYFORMAT_PASSARGS_TAIL_14 , v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14
-#define TINYFORMAT_PASSARGS_TAIL_15 , v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15
-#define TINYFORMAT_PASSARGS_TAIL_16 , v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16
+#define TINYFORMAT_PASSARGS_0(...)
+#define TINYFORMAT_PASSARGS_1(...) __VA_ARGS__ v1
+#define TINYFORMAT_PASSARGS_2(...) __VA_ARGS__ v1, v2
+#define TINYFORMAT_PASSARGS_3(...) __VA_ARGS__ v1, v2, v3
+#define TINYFORMAT_PASSARGS_4(...) __VA_ARGS__ v1, v2, v3, v4
+#define TINYFORMAT_PASSARGS_5(...) __VA_ARGS__ v1, v2, v3, v4, v5
+#define TINYFORMAT_PASSARGS_6(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6
+#define TINYFORMAT_PASSARGS_7(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7
+#define TINYFORMAT_PASSARGS_8(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8
+#define TINYFORMAT_PASSARGS_9(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9
+#define TINYFORMAT_PASSARGS_10(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10
+#define TINYFORMAT_PASSARGS_11(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11
+#define TINYFORMAT_PASSARGS_12(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12
+#define TINYFORMAT_PASSARGS_13(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13
+#define TINYFORMAT_PASSARGS_14(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14
+#define TINYFORMAT_PASSARGS_15(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15
+#define TINYFORMAT_PASSARGS_16(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16
 
 #define TINYFORMAT_FOREACH_ARGNUM(m) \
-    m(1) m(2) m(3) m(4) m(5) m(6) m(7) m(8) m(9) m(10) m(11) m(12) m(13) m(14) m(15) m(16)
+    m(0) m(1) m(2) m(3) m(4) m(5) m(6) m(7) m(8) m(9) m(10) m(11) m(12) m(13) m(14) m(15) m(16)
 //[[[end]]]
 
 
@@ -969,18 +952,22 @@ class FormatListN : public FormatList
         { static_assert(sizeof...(args) == N, "Number of args must be N"); }
 #else // C++98 version
         void init(int) {}
-#       define TINYFORMAT_MAKE_FORMATLIST_CONSTRUCTOR(n)                \
-                                                                        \
-        template<TINYFORMAT_ARGTYPES(n)>                                \
-        FormatListN(TINYFORMAT_VARARGS(n))                              \
-            : FormatList(&m_formatterStore[0], n)                       \
-        { TINYFORMAT_ASSERT(n == N); init(0, TINYFORMAT_PASSARGS(n)); } \
-                                                                        \
-        template<TINYFORMAT_ARGTYPES(n)>                                \
-        void init(int i, TINYFORMAT_VARARGS(n))                         \
-        {                                                               \
-            m_formatterStore[i] = FormatArg(v1);                        \
-            init(i+1 TINYFORMAT_PASSARGS_TAIL(n));                      \
+#       define TINYFORMAT_MAKE_FORMATLIST_CONSTRUCTOR(n)   \
+                                                           \
+        template<class T0 TINYFORMAT_ARGTYPES(n,,,,)>      \
+        FormatListN(const T0& v0 TINYFORMAT_VARARGS(n,,))  \
+                : FormatList(&m_formatterStore[0], n+1)    \
+        {                                                  \
+            TINYFORMAT_ASSERT(n+1 == N);                   \
+            init(0, v0 TINYFORMAT_PASSARGS(n,,));          \
+        }                                                  \
+                                                           \
+        template<class T0 TINYFORMAT_ARGTYPES(n,,,,)>      \
+        void init(int i,                                   \
+                const T0& v0 TINYFORMAT_VARARGS(n,,))      \
+        {                                                  \
+            m_formatterStore[i] = FormatArg(v0);           \
+            init(i+1 TINYFORMAT_PASSARGS(n,,));            \
         }
 
         TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_FORMATLIST_CONSTRUCTOR)
@@ -1023,16 +1010,15 @@ detail::FormatListN<sizeof...(Args)> makeFormatList(const Args&... args)
 
 #else // C++98 version
 
-inline detail::FormatListN<0> makeFormatList()
-{
-    return detail::FormatListN<0>();
+#define TINYFORMAT_MAKE_MAKEFORMATLIST(n)      \
+TINYFORMAT_ARGTYPES(n,template<,>,)            \
+inline detail::FormatListN<n> makeFormatList(  \
+        TINYFORMAT_VARARGS(n,))                \
+{                                              \
+    return detail::FormatListN<n>(             \
+            TINYFORMAT_PASSARGS(n,));          \
 }
-#define TINYFORMAT_MAKE_MAKEFORMATLIST(n)                     \
-template<TINYFORMAT_ARGTYPES(n)>                              \
-detail::FormatListN<n> makeFormatList(TINYFORMAT_VARARGS(n))  \
-{                                                             \
-    return detail::FormatListN<n>(TINYFORMAT_PASSARGS(n));    \
-}
+
 TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_MAKEFORMATLIST)
 #undef TINYFORMAT_MAKE_MAKEFORMATLIST
 
@@ -1084,56 +1070,38 @@ void printfln(const char* fmt, const Args&... args)
 
 #else // C++98 version
 
-inline void format(std::ostream& out, const char* fmt)
-{
-    vformat(out, fmt, makeFormatList());
-}
-
-inline std::string format(const char* fmt)
-{
-    std::ostringstream oss;
-    format(oss, fmt);
-    return oss.str();
-}
-
-inline void printf(const char* fmt)
-{
-    format(std::cout, fmt);
-}
-
-inline void printfln(const char* fmt)
-{
-    format(std::cout, fmt);
-    std::cout << '\n';
-}
-
-#define TINYFORMAT_MAKE_FORMAT_FUNCS(n)                                   \
-                                                                          \
-template<TINYFORMAT_ARGTYPES(n)>                                          \
-void format(std::ostream& out, const char* fmt, TINYFORMAT_VARARGS(n))    \
-{                                                                         \
-    vformat(out, fmt, makeFormatList(TINYFORMAT_PASSARGS(n)));            \
-}                                                                         \
-                                                                          \
-template<TINYFORMAT_ARGTYPES(n)>                                          \
-std::string format(const char* fmt, TINYFORMAT_VARARGS(n))                \
-{                                                                         \
-    std::ostringstream oss;                                               \
-    format(oss, fmt, TINYFORMAT_PASSARGS(n));                             \
-    return oss.str();                                                     \
-}                                                                         \
-                                                                          \
-template<TINYFORMAT_ARGTYPES(n)>                                          \
-void printf(const char* fmt, TINYFORMAT_VARARGS(n))                       \
-{                                                                         \
-    format(std::cout, fmt, TINYFORMAT_PASSARGS(n));                       \
-}                                                                         \
-                                                                          \
-template<TINYFORMAT_ARGTYPES(n)>                                          \
-void printfln(const char* fmt, TINYFORMAT_VARARGS(n))                     \
-{                                                                         \
-    format(std::cout, fmt, TINYFORMAT_PASSARGS(n));                       \
-    std::cout << '\n';                                                    \
+#define TINYFORMAT_MAKE_FORMAT_FUNCS(n,...)           \
+                                                      \
+TINYFORMAT_ARGTYPES(n,template<,>,)                   \
+inline void format(std::ostream& out,                 \
+        const char* fmt TINYFORMAT_VARARGS(n,,))      \
+{                                                     \
+    vformat(out, fmt, makeFormatList(                 \
+            TINYFORMAT_PASSARGS(n,)));                \
+}                                                     \
+                                                      \
+TINYFORMAT_ARGTYPES(n,template<,>,)                   \
+inline std::string format(                            \
+        const char* fmt TINYFORMAT_VARARGS(n,,))      \
+{                                                     \
+    std::ostringstream oss;                           \
+    format(oss, fmt TINYFORMAT_PASSARGS(n,,));        \
+    return oss.str();                                 \
+}                                                     \
+                                                      \
+TINYFORMAT_ARGTYPES(n,template<,>,)                   \
+inline void printf(                                   \
+        const char* fmt TINYFORMAT_VARARGS(n,,))      \
+{                                                     \
+    format(std::cout, fmt TINYFORMAT_PASSARGS(n,,));  \
+}                                                     \
+                                                      \
+TINYFORMAT_ARGTYPES(n,template<,>,)                   \
+inline void printfln(                                 \
+        const char* fmt TINYFORMAT_VARARGS(n,,))      \
+{                                                     \
+    format(std::cout, fmt TINYFORMAT_PASSARGS(n,,));  \
+    std::cout << '\n';                                \
 }
 
 TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_FORMAT_FUNCS)
