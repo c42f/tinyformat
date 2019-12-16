@@ -64,16 +64,16 @@ struct TestWrap
     std::ostringstream m_oss;
     // template<typename... Args>
     // std::string error(int code, const char* fmt, const Args&... args);
-#   define MAKE_ERROR_FUNC(n)                                  \
-    template<class T0 TINYFORMAT_ARGTYPES(n,,,,)>              \
-    std::string error(int code,                                \
-            const char* fmt,                                   \
-            const T0& v0 TINYFORMAT_VARARGS(n,,))              \
-    {                                                          \
-        m_oss.clear();                                         \
-        m_oss << code << ": ";                                 \
-        tfm::format(m_oss, fmt, v0 TINYFORMAT_PASSARGS(n,,));  \
-        return m_oss.str();                                    \
+#   define MAKE_ERROR_FUNC(n)                                     \
+    template<class T0 TINYFORMAT_ARGTYPES(n,,,,)>                 \
+    std::string error(int code,                                   \
+            const char* fmt,                                      \
+            const T0& v0 TINYFORMAT_VARARGS(n,,))                 \
+    {                                                             \
+        m_oss.clear();                                            \
+        m_oss << code << ": ";                                    \
+        tfm::format(m_oss, fmt, v0 TINYFORMAT_PASSARGS(n,,,,));   \
+        return m_oss.str();                                       \
     }
     TINYFORMAT_FOREACH_ARGNUM(MAKE_ERROR_FUNC)
 };
@@ -81,10 +81,10 @@ struct TestWrap
 
 struct TestExceptionDef : public std::runtime_error
 {
-#   define MAKE_CONSTRUCTOR(n)                                              \
-    template<class T0 TINYFORMAT_ARGTYPES(n,,,,)>                           \
-    TestExceptionDef(const char* fmt, const T0& v0 TINYFORMAT_VARARGS(n,,)) \
-        : std::runtime_error(tfm::format(fmt, v0 TINYFORMAT_PASSARGS(n,,))) \
+#   define MAKE_CONSTRUCTOR(n)                                                  \
+    template<class T0 TINYFORMAT_ARGTYPES(n,,,,)>                               \
+    TestExceptionDef(const char* fmt, const T0& v0 TINYFORMAT_VARARGS(n,,))     \
+        : std::runtime_error(tfm::format(fmt, v0 TINYFORMAT_PASSARGS(n,,,,)))   \
     { }
     TINYFORMAT_FOREACH_ARGNUM(MAKE_CONSTRUCTOR)
 };

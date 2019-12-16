@@ -269,9 +269,8 @@ writing out a version of `error()` for each desired number of arguments.  To
 make this bearable tinyformat comes with a set of macros which are used
 internally to generate the API, but which may also be used in user code.
 
-The three macros `TINYFORMAT_ARGTYPES(n,begin,end,...)`,
-`TINYFORMAT_VARARGS(n,...)` and `TINYFORMAT_PASSARGS(n,...)`
-will generate a list of `n` argument types,
+The three macros `TINYFORMAT_ARGTYPES(n,begin,end,...)`, `TINYFORMAT_VARARGS(n,...)`
+and `TINYFORMAT_PASSARGS(n,begin,end,...)` will generate a list of `n` argument types,
 type/name pairs and argument names respectively when called with an integer
 `n` between 0 and 16.  We can use these to define a macro which generates the
 desired user defined function with `n` arguments.  This should be followed by
@@ -290,11 +289,11 @@ all supported `n`.  There are two usage cases for these macros:
    #define MAKE_ERROR_FUNC(n)                         \
    TINYFORMAT_ARGTYPES(n,template<,>,)                \
    inline void error(int code,                        \
-           const char* fmt TINYFORMAT_VARARGS(n,,))   \
+          const char* fmt TINYFORMAT_VARARGS(n,,))    \
    {                                                  \
-       std::cerr << "error (code " << code << ")";    \
-       tfm::format(std::cerr,                         \
-               fmt TINYFORMAT_PASSARGS(n,,));         \
+      std::cerr << "error (code " << code << ")";     \
+      tfm::format(std::cerr,                          \
+              fmt TINYFORMAT_PASSARGS(n,fmt[,],,));   \
    }
 
    TINYFORMAT_FOREACH_ARGNUM(MAKE_ERROR_FUNC)
@@ -312,17 +311,54 @@ all supported `n`.  There are two usage cases for these macros:
    inline void error(int code, const char* fmt, const T1& v1)
    {
        std::cerr << "error (code " << code << ")";
-       tfm::format(std::cerr, fmt, v1);
+       tfm::format(std::cerr, fmt, fmt[v1]);
    }
 
    template<class T1, class T2>
    inline void error(int code, const char* fmt, const T1& v1, const T2& v2)
    {
        std::cerr << "error (code " << code << ")";
-       tfm::format(std::cerr, fmt, v1, v2);
+       tfm::format(std::cerr, fmt, fmt[v1], fmt[v2]);
    }
 
    ...
+   ```
+
+   This `TINYFORMAT_PASSARGS(n,fmt[,],)` macro is equivalent to the C++ 11
+   parameter pack expansion `fmt[args]...`:
+   ```cpp
+   template<typename... Args>
+   void error(int code, const char* fmt, const Args&... args)
+   {
+      std::cerr << "error (code " << code << ")";
+      tfm::format(std::cerr, fmt, fmt[args]...);
+   }
+   ```
+
+   In case you need to use parenthesis instead of brackets, you have to define your
+   own wrapper around the internal "variadic" implementation. It is not enough to
+   just pass `TINYFORMAT_OPEN_PAREN` and `TINYFORMAT_OPEN_PAREN` directly to
+   the existent `TINYFORMAT_PASSARGS` because C preprocessor will expand them
+   immediately, causing the same problem as passing the open and close parenthesis
+   directly.  On the following example, it is defined an wrapper named `TINYFORMAT_PASSARGS_PAREN`:
+   ```cpp
+   #define TINYFORMAT_PASSARGS_PAREN(n,begin,inner,outter,end,...) \
+       TINYFORMAT_PASSARGS_ ## n \
+       (begin TINYFORMAT_OPEN_PAREN inner, outter TINYFORMAT_OPEN_PAREN end, __VA_ARGS__)
+   ```
+
+   It is required to use the macros `TINYFORMAT_OPEN_PAREN` and `TINYFORMAT_CLOSE_PAREN`
+   because C preprocessor macros does not allow parenthesis as arguments, i.e.,
+   just calling `TINYFORMAT_PASSARGS(n,std::string(,),,)` is invalid.  The just defined macro
+   `TINYFORMAT_PASSARGS_PAREN` could be used like the following example:
+   ```cpp
+   tfm::format(std::cerr, fmt TINYFORMAT_PASSARGS_PAREN(n,std::string,,,,,));
+
+   // Generating the following expansions:
+   tfm::format(std::cerr, fmt, std::string(v1) );
+   tfm::format(std::cerr, fmt, std::string(v1), std::string(v2) );
+   tfm::format(std::cerr, fmt, std::string(v1), std::string(v2), std::string(v3) );
+   tfm::format(std::cerr, fmt, std::string(v1), std::string(v2), std::string(v3), std::string(v4) );
    ```
 
 1. On the second case, these macros are used on a function which
@@ -337,7 +373,7 @@ all supported `n`.  There are two usage cases for these macros:
        std::cerr << "error (code " << code << ")";   \
        tfm::format(std::cerr,                        \
                fmt,                                  \
-               v0 TINYFORMAT_PASSARGS(n,,));         \
+               v0 TINYFORMAT_PASSARGS(n,,,,));       \
    }
 
    TINYFORMAT_FOREACH_ARGNUM(MAKE_ERROR_FUNC)

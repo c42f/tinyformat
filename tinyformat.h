@@ -374,9 +374,12 @@ TINYFORMAT_DEFINE_FORMATVALUE_CHAR(unsigned char)
 // stolen from the boost preprocessor metaprogramming library and cut down to
 // be just general enough for what we need.
 
+#define TINYFORMAT_OPEN_PAREN (
+#define TINYFORMAT_CLOSE_PAREN )
+
 #define TINYFORMAT_ARGTYPES(n,begin,end,...) TINYFORMAT_ARGTYPES_ ## n (begin,end,__VA_ARGS__)
 #define TINYFORMAT_VARARGS(n,...)            TINYFORMAT_VARARGS_  ## n (__VA_ARGS__)
-#define TINYFORMAT_PASSARGS(n,...)           TINYFORMAT_PASSARGS_ ## n (__VA_ARGS__)
+#define TINYFORMAT_PASSARGS(n,begin,end,...) TINYFORMAT_PASSARGS_ ## n (begin,end,__VA_ARGS__)
 
 // To keep it as transparent as possible, the macros below have been generated
 // using python via the excellent cog.py code generation script.  This avoids
@@ -406,7 +409,7 @@ makeCommaSepLists('#define TINYFORMAT_VARARGS_%(j)d(...) __VA_ARGS__ %(list)s',
 
 cog.outl()
 cog.outl('#define TINYFORMAT_PASSARGS_0(...)')
-makeCommaSepLists('#define TINYFORMAT_PASSARGS_%(j)d(...) __VA_ARGS__ %(list)s', 'v%(i)d')
+makeCommaSepLists('#define TINYFORMAT_PASSARGS_%(j)d(begin,end,...) __VA_ARGS__ %(list)s', 'begin v%(i)d end')
 
 cog.outl()
 cog.outl('#define TINYFORMAT_FOREACH_ARGNUM(m) \\\n    m(0) ' +
@@ -449,22 +452,22 @@ cog.outl('#define TINYFORMAT_FOREACH_ARGNUM(m) \\\n    m(0) ' +
 #define TINYFORMAT_VARARGS_16(...) __VA_ARGS__ const T1& v1, const T2& v2, const T3& v3, const T4& v4, const T5& v5, const T6& v6, const T7& v7, const T8& v8, const T9& v9, const T10& v10, const T11& v11, const T12& v12, const T13& v13, const T14& v14, const T15& v15, const T16& v16
 
 #define TINYFORMAT_PASSARGS_0(...)
-#define TINYFORMAT_PASSARGS_1(...) __VA_ARGS__ v1
-#define TINYFORMAT_PASSARGS_2(...) __VA_ARGS__ v1, v2
-#define TINYFORMAT_PASSARGS_3(...) __VA_ARGS__ v1, v2, v3
-#define TINYFORMAT_PASSARGS_4(...) __VA_ARGS__ v1, v2, v3, v4
-#define TINYFORMAT_PASSARGS_5(...) __VA_ARGS__ v1, v2, v3, v4, v5
-#define TINYFORMAT_PASSARGS_6(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6
-#define TINYFORMAT_PASSARGS_7(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7
-#define TINYFORMAT_PASSARGS_8(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8
-#define TINYFORMAT_PASSARGS_9(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9
-#define TINYFORMAT_PASSARGS_10(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10
-#define TINYFORMAT_PASSARGS_11(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11
-#define TINYFORMAT_PASSARGS_12(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12
-#define TINYFORMAT_PASSARGS_13(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13
-#define TINYFORMAT_PASSARGS_14(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14
-#define TINYFORMAT_PASSARGS_15(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15
-#define TINYFORMAT_PASSARGS_16(...) __VA_ARGS__ v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16
+#define TINYFORMAT_PASSARGS_1(begin,end,...) __VA_ARGS__ begin v1 end
+#define TINYFORMAT_PASSARGS_2(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end
+#define TINYFORMAT_PASSARGS_3(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end
+#define TINYFORMAT_PASSARGS_4(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end
+#define TINYFORMAT_PASSARGS_5(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end, begin v5 end
+#define TINYFORMAT_PASSARGS_6(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end, begin v5 end, begin v6 end
+#define TINYFORMAT_PASSARGS_7(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end, begin v5 end, begin v6 end, begin v7 end
+#define TINYFORMAT_PASSARGS_8(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end, begin v5 end, begin v6 end, begin v7 end, begin v8 end
+#define TINYFORMAT_PASSARGS_9(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end, begin v5 end, begin v6 end, begin v7 end, begin v8 end, begin v9 end
+#define TINYFORMAT_PASSARGS_10(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end, begin v5 end, begin v6 end, begin v7 end, begin v8 end, begin v9 end, begin v10 end
+#define TINYFORMAT_PASSARGS_11(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end, begin v5 end, begin v6 end, begin v7 end, begin v8 end, begin v9 end, begin v10 end, begin v11 end
+#define TINYFORMAT_PASSARGS_12(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end, begin v5 end, begin v6 end, begin v7 end, begin v8 end, begin v9 end, begin v10 end, begin v11 end, begin v12 end
+#define TINYFORMAT_PASSARGS_13(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end, begin v5 end, begin v6 end, begin v7 end, begin v8 end, begin v9 end, begin v10 end, begin v11 end, begin v12 end, begin v13 end
+#define TINYFORMAT_PASSARGS_14(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end, begin v5 end, begin v6 end, begin v7 end, begin v8 end, begin v9 end, begin v10 end, begin v11 end, begin v12 end, begin v13 end, begin v14 end
+#define TINYFORMAT_PASSARGS_15(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end, begin v5 end, begin v6 end, begin v7 end, begin v8 end, begin v9 end, begin v10 end, begin v11 end, begin v12 end, begin v13 end, begin v14 end, begin v15 end
+#define TINYFORMAT_PASSARGS_16(begin,end,...) __VA_ARGS__ begin v1 end, begin v2 end, begin v3 end, begin v4 end, begin v5 end, begin v6 end, begin v7 end, begin v8 end, begin v9 end, begin v10 end, begin v11 end, begin v12 end, begin v13 end, begin v14 end, begin v15 end, begin v16 end
 
 #define TINYFORMAT_FOREACH_ARGNUM(m) \
     m(0) m(1) m(2) m(3) m(4) m(5) m(6) m(7) m(8) m(9) m(10) m(11) m(12) m(13) m(14) m(15) m(16)
@@ -959,7 +962,7 @@ class FormatListN : public FormatList
                 : FormatList(&m_formatterStore[0], n+1)    \
         {                                                  \
             TINYFORMAT_ASSERT(n+1 == N);                   \
-            init(0, v0 TINYFORMAT_PASSARGS(n,,));          \
+            init(0, v0 TINYFORMAT_PASSARGS(n,,,,));        \
         }                                                  \
                                                            \
         template<class T0 TINYFORMAT_ARGTYPES(n,,,,)>      \
@@ -967,7 +970,7 @@ class FormatListN : public FormatList
                 const T0& v0 TINYFORMAT_VARARGS(n,,))      \
         {                                                  \
             m_formatterStore[i] = FormatArg(v0);           \
-            init(i+1 TINYFORMAT_PASSARGS(n,,));            \
+            init(i+1 TINYFORMAT_PASSARGS(n,,,,));          \
         }
 
         TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_FORMATLIST_CONSTRUCTOR)
@@ -1016,7 +1019,7 @@ inline detail::FormatListN<n> makeFormatList(  \
         TINYFORMAT_VARARGS(n,))                \
 {                                              \
     return detail::FormatListN<n>(             \
-            TINYFORMAT_PASSARGS(n,));          \
+            TINYFORMAT_PASSARGS(n,,,));        \
 }
 
 TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_MAKEFORMATLIST)
@@ -1070,38 +1073,36 @@ void printfln(const char* fmt, const Args&... args)
 
 #else // C++98 version
 
-#define TINYFORMAT_MAKE_FORMAT_FUNCS(n,...)           \
-                                                      \
-TINYFORMAT_ARGTYPES(n,template<,>,)                   \
-inline void format(std::ostream& out,                 \
-        const char* fmt TINYFORMAT_VARARGS(n,,))      \
-{                                                     \
-    vformat(out, fmt, makeFormatList(                 \
-            TINYFORMAT_PASSARGS(n,)));                \
-}                                                     \
-                                                      \
-TINYFORMAT_ARGTYPES(n,template<,>,)                   \
-inline std::string format(                            \
-        const char* fmt TINYFORMAT_VARARGS(n,,))      \
-{                                                     \
-    std::ostringstream oss;                           \
-    format(oss, fmt TINYFORMAT_PASSARGS(n,,));        \
-    return oss.str();                                 \
-}                                                     \
-                                                      \
-TINYFORMAT_ARGTYPES(n,template<,>,)                   \
-inline void printf(                                   \
-        const char* fmt TINYFORMAT_VARARGS(n,,))      \
-{                                                     \
-    format(std::cout, fmt TINYFORMAT_PASSARGS(n,,));  \
-}                                                     \
-                                                      \
-TINYFORMAT_ARGTYPES(n,template<,>,)                   \
-inline void printfln(                                 \
-        const char* fmt TINYFORMAT_VARARGS(n,,))      \
-{                                                     \
-    format(std::cout, fmt TINYFORMAT_PASSARGS(n,,));  \
-    std::cout << '\n';                                \
+#define TINYFORMAT_MAKE_FORMAT_FUNCS(n,...)                    \
+                                                               \
+TINYFORMAT_ARGTYPES(n,template<,>,)                            \
+inline void format(std::ostream& out,                          \
+        const char* fmt TINYFORMAT_VARARGS(n,,))               \
+{                                                              \
+    vformat(out, fmt, makeFormatList(                          \
+            TINYFORMAT_PASSARGS(n,,,)));                       \
+}                                                              \
+                                                               \
+TINYFORMAT_ARGTYPES(n,template<,>,)                            \
+inline std::string format(                                     \
+        const char* fmt TINYFORMAT_VARARGS(n,,))               \
+{                                                              \
+    std::ostringstream oss;                                    \
+    format(oss, fmt TINYFORMAT_PASSARGS(n,,,,));               \
+    return oss.str();                                          \
+}                                                              \
+                                                               \
+TINYFORMAT_ARGTYPES(n,template<,>,)                            \
+inline void printf(const char* fmt TINYFORMAT_VARARGS(n,,))    \
+{                                                              \
+    format(std::cout, fmt TINYFORMAT_PASSARGS(n,,,,));         \
+}                                                              \
+                                                               \
+TINYFORMAT_ARGTYPES(n,template<,>,)                            \
+inline void printfln(const char* fmt TINYFORMAT_VARARGS(n,,))  \
+{                                                              \
+    format(std::cout, fmt TINYFORMAT_PASSARGS(n,,,,));         \
+    std::cout << '\n';                                         \
 }
 
 TINYFORMAT_FOREACH_ARGNUM(TINYFORMAT_MAKE_FORMAT_FUNCS)
