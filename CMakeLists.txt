@@ -9,12 +9,13 @@ set(CMAKE_BUILD_TYPE "Release" CACHE STRING
     "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel."
 )
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CXX_STD "c++11" CACHE STRING "Version of C++ standard in use")
 
 # This project is infrastructure.  Warnings from common warning levels should
 # be errors on all compilers, unless explicitly silenced.
 if(NOT WIN32)
-    set(CMAKE_CXX_FLAGS "-Wall -Werror -std=${CXX_STD}" CACHE STRING "Flags used by the compiler during all build types.")
+    set(CMAKE_CXX_FLAGS "-Wall -Werror -g -ggdb -std=${CXX_STD}" CACHE STRING "Flags used by the compiler during all build types.")
 endif()
 
 project(tinyformat)
@@ -24,7 +25,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if(WIN32)
     # Treat warnings as errors.  Would set this above, but need the default
     # flags too, and `project()` behaves is differently on different systems.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /WX")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /WX /Z7")
 endif()
 
 add_executable(tinyformat_test tinyformat_test.cpp)
