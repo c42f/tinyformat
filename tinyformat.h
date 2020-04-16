@@ -957,7 +957,7 @@ typedef const FormatList& FormatListRef;
 namespace detail {
 
 // Format list subclass with fixed storage to avoid dynamic allocation
-template<int N>
+template<std::size_t N>
 class FormatListN : public FormatList
 {
     public:
