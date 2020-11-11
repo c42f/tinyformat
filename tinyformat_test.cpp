@@ -214,12 +214,15 @@ int unitTests()
     CHECK_EQUAL(tfm::format("%1$*3$.*2$f", 1234.1234567890, 4, 10), " 1234.1235");
     CHECK_EQUAL(tfm::format("%1$*2$.*3$f", 1234.1234567890, -10, 4), "1234.1235 ");
     // Test padding for infinity and NaN
+    // (Visual Studio 12.0 and earlier print these in a different way)
+#   if !defined(_MSC_VER) || _MSC_VER >= 1900
     CHECK_EQUAL(tfm::format("%.3d",   std::numeric_limits<double>::infinity()), "inf");
     CHECK_EQUAL(tfm::format("%.4d",   std::numeric_limits<double>::infinity()), " inf");
     CHECK_EQUAL(tfm::format("%04.0f", std::numeric_limits<double>::infinity()), " inf");
     CHECK_EQUAL(tfm::format("%.3d",   std::numeric_limits<double>::quiet_NaN()), "nan");
     CHECK_EQUAL(tfm::format("%.4d",   std::numeric_limits<double>::quiet_NaN()), " nan");
     CHECK_EQUAL(tfm::format("%04.0f", std::numeric_limits<double>::quiet_NaN()), " nan");
+#   endif
 
     //------------------------------------------------------------
     // Test flags
