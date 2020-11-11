@@ -144,6 +144,7 @@ namespace tfm = tinyformat;
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <cmath>
 
 #ifndef TINYFORMAT_ASSERT
 #   include <cassert>
@@ -297,6 +298,21 @@ TINYFORMAT_DEFINE_FORMAT_TRUNCATED_CSTR(const char)
 TINYFORMAT_DEFINE_FORMAT_TRUNCATED_CSTR(char)
 #undef TINYFORMAT_DEFINE_FORMAT_TRUNCATED_CSTR
 
+template<typename T>
+void spaceFillIfNotFinite(std::ostream& out, const T& value) { }
+// TODO: type_traits would clearly be better here. Should consider moving all
+// these workarounds into a big pre-C++11 section.
+#define TINYFORMAT_SETFILL_NOT_FINITE_FLOATING(type)        \
+void spaceFillIfNotFinite(std::ostream& out, type value)    \
+{                                                           \
+    if (out.fill() == '0' && !std::isfinite(value))         \
+        out.fill(' ');                                      \
+}
+TINYFORMAT_SETFILL_NOT_FINITE_FLOATING(float)
+TINYFORMAT_SETFILL_NOT_FINITE_FLOATING(double)
+TINYFORMAT_SETFILL_NOT_FINITE_FLOATING(long double)
+#undef TINYFORMAT_SETFILL_NOT_FINITE_FLOATING
+
 } // namespace detail
 
 
@@ -333,6 +349,7 @@ inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,
     // could otherwise lead to a crash when printing a dangling (const char*).
     const bool canConvertToChar = detail::is_convertible<T,char>::value;
     const bool canConvertToVoidPtr = detail::is_convertible<T, const void*>::value;
+    detail::spaceFillIfNotFinite(out, value);
     if (canConvertToChar && *(fmtEnd-1) == 'c')
         detail::formatValueAsType<T, char>::invoke(out, value);
     else if (canConvertToVoidPtr && *(fmtEnd-1) == 'p')
