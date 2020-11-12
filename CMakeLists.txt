@@ -27,7 +27,10 @@ if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /WX")
 endif()
 
-add_executable(tinyformat_test tinyformat_test.cpp)
+# Dummy translation unit to test for missing `inline`s
+include_directories(${CMAKE_SOURCE_DIR})
+file(WRITE ${CMAKE_BINARY_DIR}/_empty.cpp "#include \"tinyformat.h\"")
+add_executable(tinyformat_test tinyformat_test.cpp ${CMAKE_BINARY_DIR}/_empty.cpp)
 enable_testing()
 if(CMAKE_CONFIGURATION_TYPES)
     set(ctest_config_opt -C ${CMAKE_BUILD_TYPE})

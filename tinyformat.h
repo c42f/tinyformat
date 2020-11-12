@@ -302,11 +302,11 @@ template<typename T>
 void spaceFillIfNotFinite(std::ostream& out, const T& value) { }
 // TODO: type_traits would clearly be better here. Should consider moving all
 // these workarounds into a big pre-C++11 section.
-#define TINYFORMAT_SETFILL_NOT_FINITE_FLOATING(type)        \
-void spaceFillIfNotFinite(std::ostream& out, type value)    \
-{                                                           \
-    if (out.fill() == '0' && !std::isfinite(value))         \
-        out.fill(' ');                                      \
+#define TINYFORMAT_SETFILL_NOT_FINITE_FLOATING(type)             \
+inline void spaceFillIfNotFinite(std::ostream& out, type value)  \
+{                                                                \
+    if (out.fill() == '0' && !std::isfinite(value))              \
+        out.fill(' ');                                           \
 }
 TINYFORMAT_SETFILL_NOT_FINITE_FLOATING(float)
 TINYFORMAT_SETFILL_NOT_FINITE_FLOATING(double)
