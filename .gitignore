@@ -1,4 +1,5 @@
 /build
+_empty.cpp
 _bloat_test_tmp*
 tinyformat_test_cxx*
 tinyformat_speed_test
