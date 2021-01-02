@@ -3,7 +3,7 @@
 # Should work with recent versions of both gcc and clang.  (To compile with
 # clang use "make CXX=clang++".)
 
-CXXFLAGS?=-Wall -Werror
+CXXFLAGS?=-Wall -Werror -g -ggdb
 CXX11FLAGS?=-std=c++11
 
 test: tinyformat_test_cxx98 tinyformat_test_cxx11

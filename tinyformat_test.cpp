@@ -53,9 +53,18 @@ catch (std::runtime_error&) {}                                  \
 if (!((a) == (b)))                                         \
 {                                                          \
     std::cout << "test failed, line " << __LINE__ << "\n"; \
-    std::cout << (a) << " != " << (b) << "\n";             \
     std::cout << "[" #a ", " #b "]\n";                     \
+    std::cout << "'" << (a) << "' != '" << (b) << "'\n";   \
     ++nfailed;                                             \
+}
+
+#define CHECK_FIND(a, b)                                                      \
+if (std::string(a).find(std::string(b)) == std::string::npos)                 \
+{                                                                             \
+    std::cout << "test failed, line " << __LINE__ << "\n";                    \
+    std::cout << "[" #b ", " #a "]\n";                                        \
+    std::cout << "'" << (b) << "' could not be found on '" << (a) << "'\n";   \
+    ++nfailed;                                                                \
 }
 
 
@@ -102,6 +111,10 @@ std::ostream& operator<<(std::ostream& os, const MyInt& obj) {
     return os;
 }
 
+struct test_debugger { void var() {} };
+void fun_void_void(){};
+void fun_void_double(double d){};
+double fun_double_double(double d){return d;}
 
 int unitTests()
 {
@@ -334,6 +347,20 @@ int unitTests()
     tfm::printfln("%s %s %d", "printfln", "test", 1);
     std::cout.rdbuf(coutBuf); // restore buffer
     CHECK_EQUAL(coutCapture.str(), "printf test 1\nprintfln test 1\n");
+
+    int* var;
+    std::ostringstream function_pointer_stream;
+    function_pointer_stream << tfm::format( "0. %s", var ) << std::endl;
+    function_pointer_stream << tfm::format( "1. %s", &fun_void_void ) << std::endl;
+    function_pointer_stream << tfm::format( "2. %s", &fun_void_double ) << std::endl;
+    function_pointer_stream << tfm::format( "3. %s", &fun_double_double ) << std::endl;
+    function_pointer_stream << tfm::format( "4. %s", &test_debugger::var ) << std::endl;
+
+    CHECK_FIND(function_pointer_stream.str(), "0. ");
+    CHECK_FIND(function_pointer_stream.str(), "1. 0x");
+    CHECK_FIND(function_pointer_stream.str(), "2. 0x");
+    CHECK_FIND(function_pointer_stream.str(), "3. 0x");
+    CHECK_FIND(function_pointer_stream.str(), "4. 0x");
 
     return nfailed;
 }

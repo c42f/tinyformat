@@ -192,5 +192,5 @@ script:
   - mkdir build
   - cd build
   - cmake -DCMAKE_CXX_COMPILER=$COMPILER -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCXX_STD=$CXX_STD ..
-  - make testall
+  - make testall VERBOSE=1
 
