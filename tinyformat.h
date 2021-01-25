@@ -1084,6 +1084,16 @@ std::string format(const char* fmt, const Args&... args)
     return oss.str();
 }
 
+/// Format list of arguments according to the given format in a string object and return
+/// the result as a string.
+template<typename... Args>
+std::string format(const std::string& fmt, const Args&... args)
+{
+    std::ostringstream oss;
+    format(oss, fmt.c_str(), args...);
+    return oss.str();
+}
+
 /// Format list of arguments to std::cout, according to the given format string
 template<typename... Args>
 void printf(const char* fmt, const Args&... args)
