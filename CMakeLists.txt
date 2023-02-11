@@ -27,8 +27,8 @@ if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /WX")
 endif()
 
-option(TINYFORMAT_TEST ON)
-if (TINYFORMAT_TEST)
+option(BUILD_TESTS ON)
+if (BUILD_TESTS)
     # Dummy translation unit to test for missing `inline`s
     include_directories(${CMAKE_SOURCE_DIR})
     file(WRITE ${CMAKE_BINARY_DIR}/_empty.cpp "#include \"tinyformat.h\"")
@@ -45,3 +45,9 @@ if (TINYFORMAT_TEST)
         add_executable(tinyformat_speed_test tinyformat_speed_test.cpp)
     endif ()
 endif ()
+
+# Enable inclusion into other CMake builds
+add_library(tinyformat INTERFACE)
+target_include_directories(tinyformat INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>)
+install(TARGETS tinyformat EXPORT tinyformat)
+install(EXPORT tinyformat NAMESPACE tinyformat:: DESTINATION ${CMAKE_CURRENT_LIST_DIR})
