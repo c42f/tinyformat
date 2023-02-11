@@ -1,5 +1,9 @@
-/build
-_empty.cpp
 _bloat_test_tmp*
-tinyformat_test_cxx*
+_empty.cpp
+*.cmake
+bin
+build
+CMakeCache.txt
+CMakeFiles
 tinyformat_speed_test
+tinyformat_test_cxx*
