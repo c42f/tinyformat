@@ -1,44 +1,42 @@
 # CMake build for tests.
 #
 # See also the Makefile, which is currently more fully featured on unix.
+cmake_minimum_required(VERSION 3.14)
+project(tinyformat LANGUAGES CXX)
 
-
-# Set cmake builtin variables before calling project(), otherwise the
-# cmake-provided defaults will get in first!
-set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-    "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel."
+# Define the target library
+add_library(tinyformat INTERFACE)
+target_compile_features(tinyformat INTERFACE cxx_std_11)
+target_compile_options(tinyformat INTERFACE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Werror>
+)
+target_include_directories(tinyformat INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
 )
 
-set(CXX_STD "c++11" CACHE STRING "Version of C++ standard in use")
+# Setup for testing
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(tinyformat_test tinyformat_test.cpp)
+    target_link_libraries(tinyformat_test PRIVATE tinyformat)
+    add_test(NAME tinyformat_test COMMAND tinyformat_test)
 
-# This project is infrastructure.  Warnings from common warning levels should
-# be errors on all compilers, unless explicitly silenced.
-if(NOT WIN32)
-    set(CMAKE_CXX_FLAGS "-Wall -Werror -std=${CXX_STD}" CACHE STRING "Flags used by the compiler during all build types.")
-endif()
-
-project(tinyformat)
-cmake_minimum_required(VERSION 2.8)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-if(WIN32)
-    # Treat warnings as errors.  Would set this above, but need the default
-    # flags too, and `project()` behaves is differently on different systems.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /WX")
-endif()
-
-# Dummy translation unit to test for missing `inline`s
-include_directories(${CMAKE_SOURCE_DIR})
-file(WRITE ${CMAKE_BINARY_DIR}/_empty.cpp "#include \"tinyformat.h\"")
-add_executable(tinyformat_test tinyformat_test.cpp ${CMAKE_BINARY_DIR}/_empty.cpp)
-enable_testing()
-if(CMAKE_CONFIGURATION_TYPES)
-    set(ctest_config_opt -C ${CMAKE_BUILD_TYPE})
-endif()
-add_test(NAME test COMMAND tinyformat_test)
-add_custom_target(testall COMMAND ${CMAKE_CTEST_COMMAND} -V ${ctest_config_opt} DEPENDS tinyformat_test)
-
-option(COMPILE_SPEED_TEST FALSE)
-if (COMPILE_SPEED_TEST)
     add_executable(tinyformat_speed_test tinyformat_speed_test.cpp)
-endif ()
+    target_link_libraries(tinyformat_speed_test PRIVATE tinyformat)
+
+    foreach(impl printf iostreams tinyformat boost)
+        add_test(NAME tinyformat_speed_test_${impl} COMMAND tinyformat_speed_test ${impl})
+    endforeach()
+endif()
+
+# Setup for installation
+install(TARGETS tinyformat EXPORT tinyformatTargets)
+install(FILES tinyformat.h DESTINATION include)
+install(FILES tinyformatConfig.cmake DESTINATION lib/cmake/tinyformat)
+install(
+    EXPORT tinyformatTargets
+    FILE tinyformatTargets.cmake
+    DESTINATION lib/cmake/tinyformat
+)
